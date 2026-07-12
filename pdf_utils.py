@@ -17,3 +17,17 @@ def truncate_for_context(text: str, max_chars: int = 12000) -> str:
     if len(text) <= max_chars:
         return text
     return text[:max_chars] + "\n\n[...documento truncado...]"
+
+
+def combine_documents(docs: list) -> str:
+    """Combina varios documentos (nombre, texto) en un solo bloque de contexto,
+    separando cada uno con un encabezado para que el modelo distinga la fuente.
+
+    docs: lista de tuplas (nombre_legible, texto_extraido)
+    """
+    partes = []
+    for nombre, texto in docs:
+        if not texto:
+            continue
+        partes.append(f"### Documento: {nombre}\n{texto}")
+    return "\n\n".join(partes)
