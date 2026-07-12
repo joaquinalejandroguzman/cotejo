@@ -66,7 +66,7 @@ with st.sidebar:
             "Host de Ollama", value=os.environ.get("OLLAMA_HOST", "http://localhost:11434")
         )
         model_name = st.text_input(
-            "Modelo", value=os.environ.get("OLLAMA_MODEL", "llama3.2:1b")
+            "Modelo", value=os.environ.get("OLLAMA_MODEL", "llama3.2:3b")
         )
 
     st.divider()
