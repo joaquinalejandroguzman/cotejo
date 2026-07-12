@@ -8,28 +8,63 @@ deterministica en Python, sin depender de que el modelo razone bien.
 Solo las preguntas reales sobre el contenido del documento llegan al LLM.
 """
 import re
+import unicodedata
 
+# Patrones sin tildes: el texto se normaliza (tildes removidas) antes de
+# matchear, asi "qué" y "que", "documentación" y "documentacion" matchean igual.
 _SALUDOS = [
-    r"^hola\b", r"^buenas\b", r"^buen[oa]s? d[ií]as?\b", r"^buenas tardes\b",
-    r"^buenas noches\b", r"^hey\b", r"^que tal\b", r"^qu[eé] tal\b",
-    r"^como estas\b", r"^c[oó]mo est[aá]s\b", r"^gracias\b", r"^muchas gracias\b",
-    r"^chau\b", r"^adios\b", r"^adi[oó]s\b", r"^hasta luego\b", r"^ok gracias\b",
+    r"^hola\b", r"^buenas\b", r"^buen[oa]s? dias?\b", r"^buenas tardes\b",
+    r"^buenas noches\b", r"^hey\b", r"^que tal\b",
+    r"^como estas\b", r"^gracias\b", r"^muchas gracias\b",
+    r"^chau\b", r"^adios\b", r"^hasta luego\b", r"^ok gracias\b",
 ]
 
 _META_DOCS = [
-    r"que documentaci[oó]n ten[eé]s",
-    r"que documentos ten[eé]s",
-    r"que datos (manej|ten[eé]s|tenes)",
-    r"que informaci[oó]n ten[eé]s cargada",
-    r"como (hago para )?ver.*documentaci[oó]n",
-    r"como (hago para )?saber.*documentaci[oó]n",
-    r"que documentaci[oó]n.*cargad",
-    r"acceso a (la|tu) documentaci[oó]n",
+    r"que documentacion tenes",
+    r"que documentos tenes",
+    r"que datos (manej|tenes)",
+    r"que informacion tenes cargada",
+    r"como (hago para )?ver.*documentacion",
+    r"como (hago para )?saber.*documentacion",
+    r"que documentacion.*cargad",
+    r"acceso a (la|tu) documentacion",
+]
+
+# Intentos de jailbreak / prompt injection: instrucciones que buscan que el
+# agente ignore sus reglas, revele su system prompt, o invente contenido
+# fuera del documento haciendose pasar por "sin restricciones".
+_JAILBREAK = [
+    r"ignora tus instrucciones", r"ignora las instrucciones",
+    r"olvida tus instrucciones", r"olvida las instrucciones",
+    r"sin restricciones", r"sin filtros", r"no tienes reglas",
+    r"modo desarrollador", r"developer mode", r"eres libre de",
+    r"actua como si no tuvieras", r"finge que no tienes",
+    r"system prompt", r"cual es tu prompt", r"revela tu prompt",
+    r"dime tu prompt", r"cuentame un secreto", r"dime un secreto",
+    r"contame un secreto", r"que secreto",
 ]
 
 
 def _normalize(text: str) -> str:
-    return text.strip().lower()
+    t = text.strip().lower()
+    # Quita tildes/diacriticos (NFKD separa la letra del acento, luego
+    # descartamos los caracteres combinantes).
+    t = unicodedata.normalize("NFKD", t)
+    t = "".join(c for c in t if not unicodedata.combining(c))
+    return t
+
+
+def is_injection_attempt(text: str) -> bool:
+    t = _normalize(text)
+    return any(re.search(p, t) for p in _JAILBREAK)
+
+
+def injection_response() -> str:
+    return (
+        "No puedo compartir instrucciones internas, secretos ni salirme de mi "
+        "función como agente de soporte de TiendaNova. ¿Te ayudo con alguna duda "
+        "sobre nuestras políticas de privacidad, devoluciones, envíos o pagos?"
+    )
 
 
 def is_greeting(text: str) -> bool:
@@ -63,6 +98,8 @@ def meta_docs_response(doc_names: list) -> str:
 def route(text: str, doc_names: list):
     """Devuelve una respuesta directa si el mensaje matchea una regla,
     o None si debe ir al LLM."""
+    if is_injection_attempt(text):
+        return injection_response()
     if is_greeting(text):
         return greeting_response()
     if is_meta_docs_question(text):
