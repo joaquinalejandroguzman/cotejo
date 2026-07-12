@@ -15,6 +15,7 @@ import streamlit as st
 
 from pdf_utils import extract_text_from_pdf, truncate_for_context, combine_documents
 from ollama_client import chat, OllamaError
+from router import route
 
 DEFAULT_PDF = os.path.join(os.path.dirname(__file__), "documentacion_agente.pdf")
 
@@ -97,31 +98,15 @@ if not docs:
 doc_text = truncate_for_context(combine_documents(docs), max_chars=16000)
 doc_label = " + ".join([nombre for nombre, _ in docs])
 
-SYSTEM_PROMPT = f"""Eres el agente de soporte virtual de TiendaNova, una tienda online.
-Tu unica fuente de verdad es el documento de mas abajo. Reglas estrictas:
+SYSTEM_PROMPT = f"""Eres el agente de soporte virtual de TiendaNova. Respondes SOLO
+con informacion que este explicitamente en el documento de mas abajo.
 
-0. Si el mensaje es un saludo o cortesia social (hola, buenas, gracias, chau, como estas,
-   etc.) y NO contiene una pregunta real, responde de forma breve, cálida y natural
-   (ej: "¡Hola! ¿En qué puedo ayudarte hoy con TiendaNova?"), invitando a preguntar sobre
-   políticas, envíos, pagos o devoluciones. No apliques la regla 2 a estos mensajes, y no
-   agregues frases robóticas como "no hay mucho más que decir".
-0.5. Si te preguntan que documentacion tenes cargada, que datos manejas, o como pueden
-   ver el documento, responde SOLO listando estos temas reales (no inventes sitios web,
-   indices, ni procedimientos que no existen): {", ".join(nombre for nombre, _ in docs)}.
-   Ejemplo: "Tengo cargada la documentación de TiendaNova, que cubre: política de
-   privacidad, devoluciones, FAQ, envíos y términos y condiciones. Preguntame lo que
-   necesites sobre esos temas."
-1. Para preguntas reales, responde SOLO con informacion que este explicitamente en el documento.
-2. Si la pregunta NO tiene relacion con el contenido del documento (ejemplos: la fecha
-   de hoy, el clima, temas generales, matematica, opiniones personales, cualquier cosa
-   fuera de politicas/envios/pagos/devoluciones de TiendaNova), responde exactamente:
-   "Esa pregunta esta fuera de mi alcance. Solo puedo ayudarte con dudas sobre las
-   politicas y servicios de TiendaNova." No inventes una respuesta ni des excusas falsas.
-3. Si la pregunta es sobre TiendaNova pero el documento no cubre ese detalle especifico,
-   dilo claramente y sugiere contactar a soporte@tiendanova.com. No inventes datos.
-4. Nunca inventes politicas de privacidad, plazos o excusas que no esten en el documento.
-5. Responde siempre en español, de forma clara, breve, cordial y natural — nunca cortante
-   ni robótica.
+Si la pregunta no tiene relacion con TiendaNova (ejemplo: la fecha de hoy, el clima,
+temas generales) o el documento no cubre ese detalle, responde exactamente:
+"No tengo esa información en mi documentación. Te recomiendo contactar a
+soporte@tiendanova.com." No inventes datos ni procedimientos que no existen.
+
+Responde siempre en español, breve, claro y cordial.
 
 --- DOCUMENTO ---
 {doc_text}
@@ -151,14 +136,22 @@ if question:
     with st.chat_message("user"):
         st.markdown(question)
 
-    llm_messages = [{"role": "system", "content": SYSTEM_PROMPT}] + st.session_state.messages
+    doc_names = [nombre for nombre, _ in docs]
+    routed_answer = route(question, doc_names)
 
     with st.chat_message("assistant"):
-        with st.spinner("Pensando..."):
-            try:
-                answer = chat(llm_messages, model=model_name, host=ollama_host)
-            except OllamaError as e:
-                answer = f"⚠️ {e}"
-        st.markdown(answer)
+        if routed_answer is not None:
+            # Saludo o pregunta meta sobre la documentacion: respuesta
+            # deterministica, sin pasar por el LLM (evita alucinaciones).
+            answer = routed_answer
+            st.markdown(answer)
+        else:
+            llm_messages = [{"role": "system", "content": SYSTEM_PROMPT}] + st.session_state.messages
+            with st.spinner("Pensando..."):
+                try:
+                    answer = chat(llm_messages, model=model_name, host=ollama_host)
+                except OllamaError as e:
+                    answer = f"⚠️ {e}"
+            st.markdown(answer)
 
     st.session_state.messages.append({"role": "assistant", "content": answer})
