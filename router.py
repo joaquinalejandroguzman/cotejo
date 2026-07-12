@@ -51,6 +51,9 @@ def _normalize(text: str) -> str:
     # descartamos los caracteres combinantes).
     t = unicodedata.normalize("NFKD", t)
     t = "".join(c for c in t if not unicodedata.combining(c))
+    # Quita signos de apertura en español y espacios sobrantes, para que
+    # los patrones anclados con ^ funcionen igual con o sin "¿"/"¡".
+    t = t.lstrip("¿¡ ")
     return t
 
 
