@@ -56,7 +56,7 @@ class TestMetaDocs:
         assert is_meta_docs_question("¿Cómo hago para ver los datos de tu documentación?")
 
     def test_pregunta_normal_no_es_meta(self):
-        assert not is_meta_docs_question("¿Hacen envíos a Colombia?")
+        assert not is_meta_docs_question("¿Hacen envíos a Argentina?")
 
 
 # ---------------------------------------------------------------------------
