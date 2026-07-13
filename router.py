@@ -72,11 +72,20 @@ def injection_response() -> str:
 
 def is_greeting(text: str) -> bool:
     t = _normalize(text)
-    if len(t) > 40:
-        # Un saludo real es corto; si el mensaje es largo probablemente
-        # incluye una pregunta real ademas del saludo.
+    for p in _SALUDOS:
+        m = re.match(p, t)
+        if not m:
+            continue
+        # No alcanza con que el mensaje EMPIECE con un saludo: hay que
+        # revisar que despues del saludo no quede una pregunta real.
+        # Un umbral de longitud total es fragil (ej: "hola, como compro?"
+        # es corto pero es una pregunta real) - lo que importa es cuanto
+        # texto queda una vez que se saca el saludo en si.
+        resto = t[m.end():].strip(" ,.!?")
+        if resto == "" or len(resto.split()) <= 2:
+            return True
         return False
-    return any(re.search(p, t) for p in _SALUDOS)
+    return False
 
 
 def is_meta_docs_question(text: str) -> bool:

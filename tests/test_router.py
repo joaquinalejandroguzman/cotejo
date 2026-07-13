@@ -44,6 +44,13 @@ class TestSaludos:
     def test_pregunta_de_negocio_no_es_saludo(self):
         assert not is_greeting("¿Cuánto tiempo tengo para devolver un producto?")
 
+    def test_saludo_corto_con_pregunta_real_no_es_saludo(self):
+        # Bug real encontrado probando la app: "hola, como puedo realizar
+        # una compra?" mide menos de 40 caracteres pero NO es un saludo
+        # puro, tiene una pregunta real adentro. El umbral de longitud
+        # total no alcanza; hay que mirar que queda despues del saludo.
+        assert not is_greeting("hola, como puedo realizar una compra?")
+
 
 # ---------------------------------------------------------------------------
 # Preguntas meta sobre la documentacion
