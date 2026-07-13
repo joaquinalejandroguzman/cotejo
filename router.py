@@ -67,13 +67,13 @@ _JAILBREAK = [
     r"pretendas que no tenes", r"imagina que no tenes reglas", r"en un mundo hipotetico.*sin reglas",
 
     # --- C. Pedido directo del system prompt / instrucciones ---
-    # "syst\w*" (en vez de "system" literal) tolera errores de tipeo como
-    # "systm" o variantes como "systema" - un typo no deberia bastar para
-    # esquivar el filtro. Cubrimos ademas el orden invertido ("prompt
-    # system") porque "decime tu prompt system" no matcheaba antes y el
-    # modelo terminaba inventando una descripcion completa de su
-    # arquitectura interna en vez de rechazar.
-    r"\bsyst\w*\s+prompt\b", r"\bprompt\s+syst\w*\b", r"system instructions",
+    # "syst\w*" y "pr\w*mpt" (en vez de "system"/"prompt" literales) toleran
+    # errores de tipeo como "systm" o "prmpt" - un typo no deberia bastar
+    # para esquivar el filtro. Cubrimos ademas el orden invertido ("prompt
+    # system") porque el modelo, cuando esto no matcheaba, terminaba
+    # inventando una descripcion completa de su arquitectura interna en vez
+    # de rechazar.
+    r"\bsyst\w*\s+pr\w*mpt\b", r"\bpr\w*mpt\s+syst\w*\b", r"system instructions",
     r"cual es tu prompt", r"cual es tu configuracion",
     r"cuales son tus instrucciones", r"que instrucciones tenes", r"que instrucciones tienes",
     r"que reglas tenes", r"que reglas tienes", r"cuales son tus reglas",
@@ -83,10 +83,13 @@ _JAILBREAK = [
     r"repeti (tu prompt|tus instrucciones)", r"repite (tu prompt|tus instrucciones)",
     r"imprimi tu prompt", r"imprime tu prompt", r"tu prompt inicial",
     r"que te dijeron que hicieras", r"que instrucciones te dieron",
-    # "dime"/"decime" (imperativo) y "tenes/tienes que decir" (obligacion):
-    # son construcciones gramaticales distintas para pedir lo mismo.
-    r"dime tu prompt", r"decime tu prompt",
-    r"(tenes|tienes) que decir(me)?.*(prompt|secreto|instruccion)",
+    # "dime"/"decime" (imperativo), "tenes/tienes que decir" (obligacion) y
+    # "necesito/quiero que me digas" (peticion): tres construcciones
+    # gramaticales distintas para pedir lo mismo - y "prompt"/"secreto"
+    # con tolerancia a typos, porque tambien se puede escribir mal.
+    r"dime tu pr\w*mpt", r"decime tu pr\w*mpt",
+    r"(tenes|tienes) que decir(me)?.*(pr\w*mpt|secreto|instruccion)",
+    r"(necesito|quiero) que me (digas|cuentes).*(pr\w*mpt|secreto|instruccion)",
 
     # --- D. Secretos / informacion oculta ---
     r"cuentame un secreto", r"contame un secreto", r"dime un secreto",
