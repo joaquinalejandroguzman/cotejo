@@ -51,8 +51,9 @@ _OFFTOPIC = [
 # alcanza con un solo verbo conjugado.
 _JAILBREAK = [
     # --- A. Anular / ignorar las instrucciones ---
-    r"ignora tus instrucciones", r"ignora las instrucciones", r"ignora lo anterior",
-    r"ignora todo lo anterior", r"olvida tus instrucciones", r"olvida las instrucciones",
+    r"ignora tus (instrucciones|reglas)", r"ignora las (instrucciones|reglas)",
+    r"ignora lo anterior", r"ignora todo lo anterior",
+    r"olvida tus (instrucciones|reglas)", r"olvida las (instrucciones|reglas)",
     r"olvida lo anterior", r"olvidate de (tus|las) (instrucciones|reglas)",
     r"descarta (tus|las) (instrucciones|reglas)", r"no sigas (tus|las) (instrucciones|reglas)",
     r"saltea(te)? (tus|las) (instrucciones|reglas)",
@@ -70,8 +71,10 @@ _JAILBREAK = [
     # orden invertido ("decime tu prompt system") no matcheaba antes y el
     # modelo terminaba inventando una descripcion completa de su
     # arquitectura interna en vez de rechazar.
-    r"system prompt", r"prompt system", r"cual es tu prompt", r"cual es tu configuracion",
+    r"system prompt", r"prompt system", r"system instructions",
+    r"cual es tu prompt", r"cual es tu configuracion",
     r"cuales son tus instrucciones", r"que instrucciones tenes", r"que instrucciones tienes",
+    r"que reglas tenes", r"que reglas tienes", r"cuales son tus reglas",
     r"mostrame (tu prompt|tus instrucciones|el prompt|las instrucciones)",
     r"muestrame (tu prompt|tus instrucciones|el prompt|las instrucciones)",
     r"revela (tu prompt|tus instrucciones)", r"revelame (tu prompt|tus instrucciones)",
@@ -108,9 +111,10 @@ _JAILBREAK = [
     # Bug real: despues de rechazar un intento de jailbreak, un simple
     # "porque" como respuesta hacia que el modelo, en vez de sostener el
     # rechazo, empezara a describir como funciona su propio system prompt.
-    # Un "porque" corto y solo (sin nada mas) casi siempre es continuar
-    # insistiendo con la pregunta anterior, no una pregunta de negocio nueva.
-    r"^porque\??$", r"^por que\??$",
+    # Un mensaje corto y solo (sin nada mas) casi siempre es insistir con
+    # la pregunta anterior, no una pregunta de negocio nueva.
+    r"^porque\??$", r"^por que\??$", r"^dale\??!?$", r"^posta\??!?$",
+    r"^en serio\??!?$", r"^vamos\??!?$",
 ]
 
 
