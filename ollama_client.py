@@ -1,9 +1,27 @@
 """Cliente minimo para hablar con un servidor Ollama local via su API REST."""
+import re
 import requests
 
 
 class OllamaError(Exception):
     pass
+
+
+# El modelo no siempre evita la muletilla "segun el documento" solo con
+# pedirselo en el prompt. La sacamos del inicio de la respuesta por codigo.
+_HEDGE_PREFIX = re.compile(
+    r"^(seg[uú]n (el|la|los|las|al) document\w*|de acuerdo (a|al|con) (el |la )?document\w*|"
+    r"de acuerdo a la documentaci[oó]n|bas[aá]ndome en (el |la |al )?document\w*|"
+    r"en base a(l)? (el |la )?document\w*)[,:]?\s*",
+    re.IGNORECASE,
+)
+
+
+def _strip_document_hedge(text: str) -> str:
+    nuevo = _HEDGE_PREFIX.sub("", text, count=1)
+    if nuevo and nuevo != text:
+        nuevo = nuevo[0].upper() + nuevo[1:]
+    return nuevo
 
 
 def chat(messages: list, model: str = "llama3.2", host: str = "http://localhost:11434", timeout: int = 240) -> str:
@@ -16,24 +34,14 @@ def chat(messages: list, model: str = "llama3.2", host: str = "http://localhost:
         "model": model,
         "messages": messages,
         "stream": False,
-        # Por defecto Ollama descarga el modelo de memoria a los 5 minutos
-        # de inactividad. Con un modelo de 3B y 12.000 tokens de contexto,
-        # volver a cargarlo es justo la parte mas lenta - subimos ese
-        # tiempo para que una sesion de pruebas no pague ese costo de nuevo
-        # cada vez que pasan unos minutos entre preguntas.
+        # Evita recargar el modelo de memoria cada pocos minutos de inactividad.
         "keep_alive": "30m",
         "options": {
-            # Temperatura baja: priorizamos respuestas ceñidas al documento
-            # por sobre respuestas "creativas". La bajamos de 0.2 a 0.3
-            # porque en 0.2 el modelo se refugiaba de mas en el mensaje
-            # fijo de "no tengo esa informacion" incluso cuando el
-            # documento si la tenia.
+            # Bajada de 0.2 a 0.3: en 0.2 el modelo abusaba del mensaje de
+            # "no tengo esa informacion" aunque el documento si la tenia.
             "temperature": 0.3,
-            # Ollama usa por defecto una ventana de contexto chica (2048
-            # tokens), que no alcanza para los 5 documentos base combinados
-            # (~36.000 caracteres, ~10.000 tokens). Sin esto, Ollama
-            # recortaria el contexto en silencio y el modelo "perderia" los
-            # ultimos documentos sin ningun error visible.
+            # El default de Ollama (2048) no alcanza para los 6 documentos
+            # combinados y los recortaba en silencio.
             "num_ctx": 16384,
         },
     }
@@ -41,10 +49,8 @@ def chat(messages: list, model: str = "llama3.2", host: str = "http://localhost:
         resp = requests.post(url, json=payload, timeout=timeout)
         resp.raise_for_status()
     except requests.exceptions.Timeout as exc:
-        # Con 6 documentos combinados el contexto ronda los 12.000 tokens;
-        # en una maquina sin GPU dedicada, procesarlo puede tardar mas de
-        # lo que tardaba con un solo documento chico. Sin este catch, un
-        # timeout tiraba un traceback feo en vez de un mensaje claro.
+        # Sin este catch, un timeout tiraba un traceback feo en vez de un
+        # mensaje claro.
         raise OllamaError(
             f"Ollama tardó más de {timeout}s en responder. Con los 6 "
             "documentos de base cargados, la primera respuesta puede tardar "
@@ -61,4 +67,5 @@ def chat(messages: list, model: str = "llama3.2", host: str = "http://localhost:
         raise OllamaError(f"Ollama respondio con error: {exc}") from exc
 
     data = resp.json()
-    return data.get("message", {}).get("content", "").strip()
+    contenido = data.get("message", {}).get("content", "").strip()
+    return _strip_document_hedge(contenido)
