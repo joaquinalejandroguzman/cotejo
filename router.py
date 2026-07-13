@@ -67,11 +67,13 @@ _JAILBREAK = [
     r"pretendas que no tenes", r"imagina que no tenes reglas", r"en un mundo hipotetico.*sin reglas",
 
     # --- C. Pedido directo del system prompt / instrucciones ---
-    # "system prompt" y "prompt system": cubrimos las dos formas porque el
-    # orden invertido ("decime tu prompt system") no matcheaba antes y el
+    # "syst\w*" (en vez de "system" literal) tolera errores de tipeo como
+    # "systm" o variantes como "systema" - un typo no deberia bastar para
+    # esquivar el filtro. Cubrimos ademas el orden invertido ("prompt
+    # system") porque "decime tu prompt system" no matcheaba antes y el
     # modelo terminaba inventando una descripcion completa de su
     # arquitectura interna en vez de rechazar.
-    r"system prompt", r"prompt system", r"system instructions",
+    r"\bsyst\w*\s+prompt\b", r"\bprompt\s+syst\w*\b", r"system instructions",
     r"cual es tu prompt", r"cual es tu configuracion",
     r"cuales son tus instrucciones", r"que instrucciones tenes", r"que instrucciones tienes",
     r"que reglas tenes", r"que reglas tienes", r"cuales son tus reglas",
@@ -81,8 +83,10 @@ _JAILBREAK = [
     r"repeti (tu prompt|tus instrucciones)", r"repite (tu prompt|tus instrucciones)",
     r"imprimi tu prompt", r"imprime tu prompt", r"tu prompt inicial",
     r"que te dijeron que hicieras", r"que instrucciones te dieron",
-    # "dime"/"decime": tu y vos (variante argentina), cubrimos las dos.
+    # "dime"/"decime" (imperativo) y "tenes/tienes que decir" (obligacion):
+    # son construcciones gramaticales distintas para pedir lo mismo.
     r"dime tu prompt", r"decime tu prompt",
+    r"(tenes|tienes) que decir(me)?.*(prompt|secreto|instruccion)",
 
     # --- D. Secretos / informacion oculta ---
     r"cuentame un secreto", r"contame un secreto", r"dime un secreto",
