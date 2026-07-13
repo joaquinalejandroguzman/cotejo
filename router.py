@@ -57,6 +57,12 @@ _JAILBREAK = [
     r"system prompt", r"cual es tu prompt", r"revela tu prompt",
     r"dime tu prompt", r"cuentame un secreto", r"dime un secreto",
     r"contame un secreto", r"que secreto",
+    # Bug real: despues de rechazar un intento de jailbreak, un simple
+    # "porque" como respuesta hacia que el modelo, en vez de sostener el
+    # rechazo, empezara a describir como funciona su propio system prompt.
+    # Un "porque" corto y solo (sin nada mas) casi siempre es continuar
+    # insistiendo con la pregunta anterior, no una pregunta de negocio nueva.
+    r"^porque\??$", r"^por que\??$",
 ]
 
 
