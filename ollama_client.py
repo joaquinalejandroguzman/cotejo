@@ -16,9 +16,20 @@ def chat(messages: list, model: str = "llama3.2", host: str = "http://localhost:
         "model": model,
         "messages": messages,
         "stream": False,
-        # Temperatura baja: priorizamos respuestas ceñidas al documento por
-        # sobre respuestas "creativas", que es justo lo que produce alucinaciones.
-        "options": {"temperature": 0.2},
+        "options": {
+            # Temperatura baja: priorizamos respuestas ceñidas al documento
+            # por sobre respuestas "creativas". La bajamos de 0.2 a 0.3
+            # porque en 0.2 el modelo se refugiaba de mas en el mensaje
+            # fijo de "no tengo esa informacion" incluso cuando el
+            # documento si la tenia.
+            "temperature": 0.3,
+            # Ollama usa por defecto una ventana de contexto chica (2048
+            # tokens), que no alcanza para los 5 documentos base combinados
+            # (~36.000 caracteres, ~10.000 tokens). Sin esto, Ollama
+            # recortaria el contexto en silencio y el modelo "perderia" los
+            # ultimos documentos sin ningun error visible.
+            "num_ctx": 16384,
+        },
     }
     try:
         resp = requests.post(url, json=payload, timeout=timeout)

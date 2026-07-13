@@ -5,7 +5,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 from pdf_utils import extract_text_from_pdf, truncate_for_context, combine_documents
 
-PDF_PATH = Path(__file__).resolve().parent.parent / "documentacion_agente.pdf"
+PDF_PATH = Path(__file__).resolve().parent.parent / "documentos" / "politica_devoluciones.pdf"
 
 
 class TestExtractTextFromPdf:
@@ -16,8 +16,8 @@ class TestExtractTextFromPdf:
     def test_contiene_secciones_esperadas(self):
         texto = extract_text_from_pdf(str(PDF_PATH))
         assert "TiendaNova" in texto
-        assert "Privacidad" in texto
         assert "Devoluciones" in texto or "devoluciones" in texto.lower()
+        assert "Reembolso" in texto or "reembolso" in texto.lower()
 
 
 class TestTruncateForContext:
