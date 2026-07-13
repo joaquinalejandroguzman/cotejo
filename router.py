@@ -62,11 +62,12 @@ def is_injection_attempt(text: str) -> bool:
     return any(re.search(p, t) for p in _JAILBREAK)
 
 
-def injection_response() -> str:
+def injection_response(company_name: str = None) -> str:
+    rol = f"agente de soporte de {company_name}" if company_name else "agente de soporte virtual"
     return (
-        "No puedo compartir instrucciones internas, secretos ni salirme de mi "
-        "función como agente de soporte de TiendaNova. ¿Te ayudo con alguna duda "
-        "sobre nuestras políticas de privacidad, devoluciones, envíos o pagos?"
+        f"No puedo compartir instrucciones internas, secretos ni salirme de mi "
+        f"función como {rol}. ¿Te ayudo con alguna duda sobre la documentación "
+        "cargada?"
     )
 
 
@@ -93,27 +94,33 @@ def is_meta_docs_question(text: str) -> bool:
     return any(re.search(p, t) for p in _META_DOCS)
 
 
-def greeting_response() -> str:
-    return "¡Hola! ¿En qué puedo ayudarte hoy con TiendaNova? Puedo responder dudas sobre privacidad, devoluciones, envíos, pagos o términos y condiciones."
+def greeting_response(company_name: str = None) -> str:
+    con_empresa = f" con {company_name}" if company_name else ""
+    return f"¡Hola! ¿En qué puedo ayudarte hoy{con_empresa}? Preguntame lo que necesites sobre la documentación cargada."
 
 
-def meta_docs_response(doc_names: list) -> str:
+def meta_docs_response(doc_names: list, company_name: str = None) -> str:
     nombres = ", ".join(doc_names)
+    de_empresa = f" de {company_name}" if company_name else ""
     return (
-        f"Tengo cargada la siguiente documentación: **{nombres}**, que cubre "
-        "política de privacidad, devoluciones, preguntas frecuentes, envíos "
-        "y términos y condiciones de TiendaNova. Preguntame lo que necesites "
-        "sobre esos temas."
+        f"Tengo cargada la siguiente documentación: **{nombres}**{de_empresa}. "
+        "Preguntame lo que necesites sobre esos temas."
     )
 
 
-def route(text: str, doc_names: list):
+def route(text: str, doc_names: list, company_name: str = None):
     """Devuelve una respuesta directa si el mensaje matchea una regla,
-    o None si debe ir al LLM."""
+    o None si debe ir al LLM.
+
+    company_name: nombre de la empresa a la que pertenece la documentacion
+    cargada (None si es generica / no se pudo determinar). Se usa solo
+    para personalizar el copy de las respuestas fijas, no cambia la logica
+    de deteccion de intencion.
+    """
     if is_injection_attempt(text):
-        return injection_response()
+        return injection_response(company_name)
     if is_greeting(text):
-        return greeting_response()
+        return greeting_response(company_name)
     if is_meta_docs_question(text):
-        return meta_docs_response(doc_names)
+        return meta_docs_response(doc_names, company_name)
     return None

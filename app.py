@@ -93,6 +93,34 @@ def load_doc_text(file_bytes_or_path):
     return extract_text_from_pdf(io.BytesIO(file_bytes_or_path) if isinstance(file_bytes_or_path, (bytes, bytearray)) else file_bytes_or_path)
 
 
+@st.cache_data(show_spinner="Identificando la empresa del documento...")
+def detect_company_name(doc_text: str, model: str, host: str):
+    """Le pregunta al modelo el nombre de la empresa/marca del documento
+    cargado, para que el agente se presente con el nombre correcto en vez
+    de asumir siempre "TiendaNova". Si no se puede determinar con
+    confianza, devuelve None y el agente queda generico (sin marca)."""
+    if not doc_text.strip():
+        return None
+    muestra = doc_text[:3000]  # alcanza con el inicio del documento
+    prompt = [
+        {"role": "system", "content": (
+            "Respondé ÚNICAMENTE con el nombre de la empresa o marca a la que "
+            "pertenece el siguiente documento, sin explicaciones ni comillas. "
+            "Si no podés determinarlo con certeza, respondé exactamente: "
+            "DESCONOCIDO."
+        )},
+        {"role": "user", "content": muestra},
+    ]
+    try:
+        respuesta = chat(prompt, model=model, host=host, timeout=30)
+    except OllamaError:
+        return None
+    respuesta = respuesta.strip().strip('"').strip(".")
+    if not respuesta or respuesta.upper() == "DESCONOCIDO" or len(respuesta) > 40:
+        return None
+    return respuesta
+
+
 docs = []
 if incluir_base:
     for nombre, archivo in DEFAULT_DOCS:
@@ -120,21 +148,36 @@ st.sidebar.markdown(
 
 doc_text = truncate_for_context(combine_documents(docs), max_chars=45000) if docs else ""
 
-SYSTEM_PROMPT = f"""Eres el agente de soporte virtual de TiendaNova. Respondes basandote
+# Nombre de la empresa: si esta la documentacion base de TiendaNova activada,
+# es TiendaNova (no hace falta preguntarle al modelo). Si el usuario cargo
+# solo documentos propios, se lo pedimos al modelo; si no se puede
+# determinar con confianza, el agente queda generico (sin marca fija).
+if incluir_base:
+    company_name = "TiendaNova"
+elif docs:
+    company_name = detect_company_name(doc_text, model_name, ollama_host)
+else:
+    company_name = None
+
+rol_agente = f"de {company_name}" if company_name else "virtual"
+tema_relacion = f"con {company_name}" if company_name else "con el contenido del documento"
+contacto = "soporte@tiendanova.com" if company_name == "TiendaNova" else "el soporte correspondiente"
+
+SYSTEM_PROMPT = f"""Eres el agente de soporte {rol_agente}. Respondes basandote
 UNICAMENTE en la informacion del documento de mas abajo.
 
 Antes de responder, fijate con atencion si el documento cubre el tema de la
 pregunta (aunque este explicado con otras palabras). Si lo cubre, respondé
 con esa informacion de forma clara y directa — no rechaces una pregunta solo
-porque suena a "como se hace algo" o a un procedimiento; el documento SI
-explica varios procedimientos (comprar, devolver un producto, etc.), y esas
+porque suena a "como se hace algo" o a un procedimiento; el documento puede
+explicar varios procedimientos (comprar, devolver un producto, etc.), y esas
 preguntas hay que responderlas con lo que dice el documento.
 
-Si la pregunta no tiene relacion con TiendaNova (ejemplo: la fecha de hoy, el
+Si la pregunta no tiene relacion {tema_relacion} (ejemplo: la fecha de hoy, el
 clima, calculos matematicos, trivia general, poemas u otro contenido creativo),
 o el documento genuinamente no cubre ese tema, respondé exactamente:
 "No tengo esa información en mi documentación. Te recomiendo contactar a
-soporte@tiendanova.com."
+{contacto}."
 
 Nunca inventes datos, URLs, nombres de botones ni procedimientos que no esten
 en el documento. Pero si la respuesta SI esta en el documento, no la
@@ -189,7 +232,7 @@ if question:
         st.markdown(question)
 
     doc_names = [nombre for nombre, _ in docs]
-    routed_answer = route(question, doc_names)
+    routed_answer = route(question, doc_names, company_name)
 
     with st.chat_message("assistant"):
         if routed_answer is not None:

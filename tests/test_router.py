@@ -116,3 +116,35 @@ class TestRoute:
         # "que dia es hoy" no es saludo, ni meta, ni jailbreak: la
         # responsabilidad de rechazarla es del system prompt del LLM.
         assert route("¿Qué día es hoy?", DOC_NAMES) is None
+
+
+# ---------------------------------------------------------------------------
+# Nombre de empresa dinamico: el agente no esta hardcodeado a "TiendaNova",
+# se presenta con el nombre de la empresa de la documentacion cargada (o de
+# forma generica si no se pudo determinar).
+# ---------------------------------------------------------------------------
+class TestNombreDeEmpresaDinamico:
+    def test_saludo_generico_sin_empresa(self):
+        resultado = greeting_response()
+        assert "con " not in resultado
+
+    def test_saludo_con_empresa_personalizada(self):
+        resultado = greeting_response("Acme")
+        assert "Acme" in resultado
+
+    def test_rechazo_jailbreak_con_empresa_personalizada(self):
+        resultado = injection_response("Acme")
+        assert "Acme" in resultado
+
+    def test_rechazo_jailbreak_generico_sin_empresa(self):
+        resultado = injection_response()
+        assert "agente de soporte virtual" in resultado
+
+    def test_meta_docs_con_empresa_personalizada(self):
+        resultado = meta_docs_response(DOC_NAMES, "Acme")
+        assert "Acme" in resultado
+
+    def test_route_propaga_nombre_de_empresa_en_saludo(self):
+        resultado = route("hola", DOC_NAMES, "Acme")
+        assert resultado == greeting_response("Acme")
+        assert "Acme" in resultado
