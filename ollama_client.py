@@ -6,7 +6,7 @@ class OllamaError(Exception):
     pass
 
 
-def chat(messages: list, model: str = "llama3.2", host: str = "http://localhost:11434", timeout: int = 120) -> str:
+def chat(messages: list, model: str = "llama3.2", host: str = "http://localhost:11434", timeout: int = 240) -> str:
     """Envia una conversacion al endpoint /api/chat de Ollama y devuelve la respuesta del modelo.
 
     messages: lista de dicts {"role": "system"|"user"|"assistant", "content": str}
@@ -34,6 +34,17 @@ def chat(messages: list, model: str = "llama3.2", host: str = "http://localhost:
     try:
         resp = requests.post(url, json=payload, timeout=timeout)
         resp.raise_for_status()
+    except requests.exceptions.Timeout as exc:
+        # Con 6 documentos combinados el contexto ronda los 12.000 tokens;
+        # en una maquina sin GPU dedicada, procesarlo puede tardar mas de
+        # lo que tardaba con un solo documento chico. Sin este catch, un
+        # timeout tiraba un traceback feo en vez de un mensaje claro.
+        raise OllamaError(
+            f"Ollama tardó más de {timeout}s en responder. Con los 6 "
+            "documentos de base cargados, la primera respuesta puede tardar "
+            "bastante en una maquina sin GPU dedicada — probá de nuevo, "
+            "usualmente las siguientes preguntas son mas rapidas."
+        ) from exc
     except requests.exceptions.ConnectionError as exc:
         raise OllamaError(
             f"No se pudo conectar a Ollama en {host}. "

@@ -30,6 +30,21 @@ _META_DOCS = [
     r"acceso a (la|tu) documentacion",
 ]
 
+# Preguntas claramente fuera de tema (no tienen nada que ver con ningun
+# documento de negocio posible): fecha/hora, clima, matematica basica y
+# contenido creativo. El modelo deberia responder con el mensaje fijo de
+# "no tengo esa informacion", pero en la practica un modelo chico a veces
+# contesta con un disclaimer generico de IA en vez de seguir la instruccion
+# al pie de la letra - mejor resolverlo aca, como el resto de estos casos.
+_OFFTOPIC = [
+    r"que dia es hoy", r"que dia es$", r"que fecha es", r"en que fecha estamos",
+    r"que hora es", r"que hora son",
+    r"que clima hace", r"como esta el clima", r"va a llover", r"el pronostico",
+    r"contame un chiste", r"decime un chiste", r"contame un poema",
+    r"escribime un poema", r"hazme un poema", r"escribime una cancion",
+    r"cuanto es \d", r"resolveme esta cuenta", r"cuanto suman",
+]
+
 # Intentos de jailbreak / prompt injection: instrucciones que buscan que el
 # agente ignore sus reglas, revele su system prompt, o invente contenido
 # fuera del documento haciendose pasar por "sin restricciones".
@@ -94,6 +109,11 @@ def is_meta_docs_question(text: str) -> bool:
     return any(re.search(p, t) for p in _META_DOCS)
 
 
+def is_offtopic_question(text: str) -> bool:
+    t = _normalize(text)
+    return any(re.search(p, t) for p in _OFFTOPIC)
+
+
 def greeting_response(company_name: str = None) -> str:
     con_empresa = f" con {company_name}" if company_name else ""
     return f"¡Hola! ¿En qué puedo ayudarte hoy{con_empresa}? Preguntame lo que necesites sobre la documentación cargada."
@@ -105,6 +125,17 @@ def meta_docs_response(doc_names: list, company_name: str = None) -> str:
     return (
         f"Tengo cargada la siguiente documentación: **{nombres}**{de_empresa}. "
         "Preguntame lo que necesites sobre esos temas."
+    )
+
+
+def _contacto(company_name: str = None) -> str:
+    return "soporte@tiendanova.com" if company_name == "TiendaNova" else "el soporte correspondiente"
+
+
+def offtopic_response(company_name: str = None) -> str:
+    return (
+        "No tengo esa información en mi documentación. Te recomiendo "
+        f"contactar a {_contacto(company_name)}."
     )
 
 
@@ -123,4 +154,6 @@ def route(text: str, doc_names: list, company_name: str = None):
         return greeting_response(company_name)
     if is_meta_docs_question(text):
         return meta_docs_response(doc_names, company_name)
+    if is_offtopic_question(text):
+        return offtopic_response(company_name)
     return None

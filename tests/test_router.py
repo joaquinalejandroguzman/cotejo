@@ -7,10 +7,12 @@ from router import (
     is_greeting,
     is_meta_docs_question,
     is_injection_attempt,
+    is_offtopic_question,
     route,
     greeting_response,
     meta_docs_response,
     injection_response,
+    offtopic_response,
 )
 
 DOC_NAMES = ["Política de Reembolsos y Devoluciones", "Guía de Tiempos y Costos de Envío"]
@@ -67,6 +69,29 @@ class TestMetaDocs:
 
 
 # ---------------------------------------------------------------------------
+# Preguntas fuera de tema (fecha, clima, chistes, etc.)
+# ---------------------------------------------------------------------------
+class TestOfftopic:
+    def test_que_dia_es_hoy(self):
+        assert is_offtopic_question("¿Qué día es hoy?")
+
+    def test_que_hora_es(self):
+        assert is_offtopic_question("¿Qué hora es?")
+
+    def test_clima(self):
+        assert is_offtopic_question("¿Cómo está el clima hoy?")
+
+    def test_chiste(self):
+        assert is_offtopic_question("contame un chiste")
+
+    def test_poema(self):
+        assert is_offtopic_question("escribime un poema sobre el otoño")
+
+    def test_pregunta_de_negocio_no_es_offtopic(self):
+        assert not is_offtopic_question("¿Cuánto tiempo tengo para devolver un producto?")
+
+
+# ---------------------------------------------------------------------------
 # Intentos de jailbreak / prompt injection
 # ---------------------------------------------------------------------------
 class TestJailbreak:
@@ -112,10 +137,24 @@ class TestRoute:
     def test_pregunta_real_no_se_enruta_va_al_llm(self):
         assert route("¿Cuánto tiempo tengo para devolver un producto?", DOC_NAMES) is None
 
-    def test_pregunta_fuera_de_tema_no_se_enruta_va_al_llm(self):
-        # "que dia es hoy" no es saludo, ni meta, ni jailbreak: la
-        # responsabilidad de rechazarla es del system prompt del LLM.
-        assert route("¿Qué día es hoy?", DOC_NAMES) is None
+    def test_pregunta_fuera_de_tema_se_enruta_a_respuesta_fija(self):
+        # Bug real: "que dia es hoy" no es saludo, meta ni jailbreak, asi
+        # que iba al LLM - y el modelo, en vez de seguir la respuesta fija
+        # del system prompt, contestaba con un disclaimer generico de IA
+        # ("soy un modelo entrenado hasta 2023..."). Se resuelve en el
+        # router, igual que el resto de los casos previsibles.
+        resultado = route("¿Qué día es hoy?", DOC_NAMES)
+        assert resultado == offtopic_response()
+
+    def test_clima_se_enruta_a_respuesta_fija(self):
+        assert route("¿Cómo está el clima hoy?", DOC_NAMES) == offtopic_response()
+
+    def test_chiste_se_enruta_a_respuesta_fija(self):
+        assert route("contame un chiste", DOC_NAMES) == offtopic_response()
+
+    def test_offtopic_respeta_nombre_de_empresa(self):
+        resultado = route("¿qué día es hoy?", DOC_NAMES, "TiendaNova")
+        assert "soporte@tiendanova.com" in resultado
 
 
 # ---------------------------------------------------------------------------
