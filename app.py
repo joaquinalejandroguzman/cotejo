@@ -18,49 +18,51 @@ from ollama_client import chat, OllamaError
 from router import route
 
 DEFAULT_PDF = os.path.join(os.path.dirname(__file__), "documentacion_agente.pdf")
+LOGO_PATH = os.path.join(os.path.dirname(__file__), "assets", "logo.png")
+FAVICON_PATH = os.path.join(os.path.dirname(__file__), "assets", "favicon.png")
 
-st.set_page_config(page_title="Agente TiendaNova", page_icon="🛍️", layout="centered")
+st.set_page_config(
+    page_title="Agente TiendaNova",
+    page_icon=FAVICON_PATH if os.path.exists(FAVICON_PATH) else "🛍️",
+    layout="centered",
+)
 
 # ---------------------------------------------------------------------------
 # Sidebar: cara visible del producto (no infraestructura)
 # ---------------------------------------------------------------------------
 EJEMPLOS = [
     "¿Cuánto tiempo tengo para devolver un producto?",
-    "¿Hacen envíos a Colombia?",
+    "¿Hacen envíos a Argentina?",
     "¿Qué pasa si el pedido llega dañado?",
 ]
 
 with st.sidebar:
-    st.markdown("### 🛍️ TiendaNova")
-    st.caption("Asistente virtual · Challenge AlurAgente")
-    st.write(
-        "Preguntame sobre políticas de privacidad, devoluciones, envíos, "
-        "pagos o términos y condiciones."
-    )
+    if os.path.exists(LOGO_PATH):
+        col_logo, col_nombre = st.columns([1, 4], vertical_alignment="center")
+        with col_logo:
+            st.image(LOGO_PATH, width=32)
+        with col_nombre:
+            st.markdown("##### TiendaNova")
+    else:
+        st.markdown("##### 🛍️ TiendaNova")
+    st.caption("Tus dudas de compra, resueltas al instante — sin esperar a soporte.")
 
-    st.divider()
-    with st.expander("💬 Preguntas de ejemplo"):
+    with st.expander("💬 Preguntas frecuentes"):
         for ejemplo in EJEMPLOS:
             if st.button(ejemplo, use_container_width=True):
                 st.session_state["pending_question"] = ejemplo
 
-    st.divider()
-    if st.button("🔄 Reiniciar conversación", use_container_width=True):
-        st.session_state.messages = []
-        st.rerun()
-
-    st.divider()
-    st.markdown("**📄 Documentación**")
     incluir_base = st.checkbox(
-        "Incluir documento base (TiendaNova)", value=True,
-        help="Desmarcá esto si querés reemplazarlo por completo con tus propios documentos."
+        "Usar documentación de TiendaNova", value=True,
+        help="Incluye políticas de privacidad, reembolsos, FAQ, envíos y términos y "
+             "condiciones. Desmarcala si vas a subir tu propia documentación en su lugar."
     )
     extras = st.file_uploader(
-        "Sumar documentos (PDF)", type=["pdf"], accept_multiple_files=True,
-        help="Podés subir uno o varios PDFs. Se combinan con el documento base (o lo reemplazan si lo desmarcás arriba)."
+        "Sumar o reemplazar con tus PDFs", type=["pdf"], accept_multiple_files=True,
+        help="Se combinan con la documentación de TiendaNova (o la reemplazan si desmarcás la opción de arriba).",
+        label_visibility="collapsed",
     )
 
-    st.divider()
     with st.expander("⚙️ Configuración avanzada"):
         ollama_host = st.text_input(
             "Host de Ollama", value=os.environ.get("OLLAMA_HOST", "http://localhost:11434")
@@ -68,10 +70,6 @@ with st.sidebar:
         model_name = st.text_input(
             "Modelo", value=os.environ.get("OLLAMA_MODEL", "llama3.2:3b")
         )
-
-    st.divider()
-    st.caption("Desarrollado por **Joaquín A. Guzmán**")
-    st.caption("Challenge AlurAgente · Oracle ONE / Alura Latam · 2026")
 
 # ---------------------------------------------------------------------------
 # Carga del documento (con cache para no re-leer el PDF en cada mensaje)
@@ -86,17 +84,24 @@ docs = []
 if incluir_base:
     docs.append(("documentacion_agente.pdf (base)", load_doc_text(DEFAULT_PDF)))
 
-nombres_extra = []
 for f in (extras or []):
     docs.append((f.name, load_doc_text(f.getvalue())))
-    nombres_extra.append(f.name)
 
 if not docs:
-    # Ni base ni extras: usar el base igual para que la app nunca quede vacia
-    docs.append(("documentacion_agente.pdf (base)", load_doc_text(DEFAULT_PDF)))
+    # Ni base ni extras: no hay nada que el agente pueda responder.
+    # No usamos ningun documento de respaldo silencioso — avisamos y frenamos.
+    st.sidebar.warning("Sin documentos cargados. Activá la documentación de TiendaNova o subí un PDF.")
+else:
+    doc_label = " + ".join([nombre for nombre, _ in docs])
+    st.sidebar.caption(f"📄 Cargado: {doc_label}")
 
-doc_text = truncate_for_context(combine_documents(docs), max_chars=16000)
-doc_label = " + ".join([nombre for nombre, _ in docs])
+st.sidebar.markdown(
+    "<div style='text-align:center; color:#8a8a8a; font-size:0.8rem;'>"
+    "Joaquín A. Guzmán · 2026</div>",
+    unsafe_allow_html=True,
+)
+
+doc_text = truncate_for_context(combine_documents(docs), max_chars=16000) if docs else ""
 
 SYSTEM_PROMPT = f"""Eres el agente de soporte virtual de TiendaNova. Respondes SOLO
 con informacion que este explicitamente en el documento de mas abajo.
@@ -121,8 +126,17 @@ Responde siempre en español, breve, claro y cordial.
 # ---------------------------------------------------------------------------
 # UI principal
 # ---------------------------------------------------------------------------
-st.title("🛍️ Agente Inteligente — TiendaNova")
-st.caption(f"Challenge AlurAgente · Oracle ONE / Alura Latam · Documento cargado: `{doc_label}`")
+col_logo_main, col_titulo, col_reset = st.columns([1, 4, 1.3], vertical_alignment="center")
+with col_logo_main:
+    if os.path.exists(LOGO_PATH):
+        st.image(LOGO_PATH, width=56)
+with col_titulo:
+    st.title("TiendaNova")
+    st.caption("Agente inteligente · Challenge AlurAgente")
+with col_reset:
+    if st.button("🔄 Nuevo chat", use_container_width=True):
+        st.session_state.messages = []
+        st.rerun()
 
 if "messages" not in st.session_state:
     st.session_state.messages = []
@@ -131,9 +145,13 @@ for msg in st.session_state.messages:
     with st.chat_message(msg["role"]):
         st.markdown(msg["content"])
 
-question = st.chat_input("Escribe tu pregunta sobre políticas, envíos, devoluciones...")
+if not docs:
+    st.info("Activá la documentación de TiendaNova o subí un PDF en la barra lateral para poder chatear.")
+    question = None
+else:
+    question = st.chat_input("Escribe tu pregunta sobre políticas, envíos, devoluciones...")
 
-if not question and "pending_question" in st.session_state:
+if not question and "pending_question" in st.session_state and docs:
     question = st.session_state.pop("pending_question")
 
 if question:
