@@ -21,10 +21,11 @@ DOCS_DIR = os.path.join(os.path.dirname(__file__), "documentos")
 LOGO_PATH = os.path.join(os.path.dirname(__file__), "assets", "logo.png")
 FAVICON_PATH = os.path.join(os.path.dirname(__file__), "assets", "favicon.png")
 
-# Documentacion base: 5 documentos separados (en vez de un unico PDF), cada
+# Documentacion base: 6 documentos separados (en vez de un unico PDF), cada
 # uno enfocado en un tema puntual. Asi el agente puede citar la fuente
 # correcta y es mas facil de mantener que un solo documento gigante.
 DEFAULT_DOCS = [
+    ("Política de Privacidad y Términos y Condiciones", "privacidad_terminos.pdf"),
     ("Política de Reembolsos y Devoluciones", "politica_devoluciones.pdf"),
     ("Programa de Afiliados", "programa_afiliados.pdf"),
     ("Guía de Tiempos y Costos de Envío", "guia_envios.pdf"),
@@ -64,10 +65,10 @@ with st.sidebar:
                 st.session_state["pending_question"] = ejemplo
 
     incluir_base = st.checkbox(
-        "Usar documentación de TiendaNova (5 documentos)", value=True,
-        help="Incluye devoluciones, programa de afiliados, envíos, métodos de pago y "
-             "garantía de productos. Desmarcala si vas a subir tu propia documentación "
-             "en su lugar."
+        "Usar documentación de TiendaNova (6 documentos)", value=True,
+        help="Incluye privacidad y términos, devoluciones, programa de afiliados, "
+             "envíos, métodos de pago y garantía de productos. Desmarcala si vas a "
+             "subir tu propia documentación en su lugar."
     )
     extras = st.file_uploader(
         "Sumar o reemplazar con tus PDFs", type=["pdf"], accept_multiple_files=True,
