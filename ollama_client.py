@@ -16,6 +16,9 @@ def chat(messages: list, model: str = "llama3.2", host: str = "http://localhost:
         "model": model,
         "messages": messages,
         "stream": False,
+        # Temperatura baja: priorizamos respuestas ceñidas al documento por
+        # sobre respuestas "creativas", que es justo lo que produce alucinaciones.
+        "options": {"temperature": 0.2},
     }
     try:
         resp = requests.post(url, json=payload, timeout=timeout)
