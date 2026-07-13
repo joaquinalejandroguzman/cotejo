@@ -16,6 +16,12 @@ def chat(messages: list, model: str = "llama3.2", host: str = "http://localhost:
         "model": model,
         "messages": messages,
         "stream": False,
+        # Por defecto Ollama descarga el modelo de memoria a los 5 minutos
+        # de inactividad. Con un modelo de 3B y 12.000 tokens de contexto,
+        # volver a cargarlo es justo la parte mas lenta - subimos ese
+        # tiempo para que una sesion de pruebas no pague ese costo de nuevo
+        # cada vez que pasan unos minutos entre preguntas.
+        "keep_alive": "30m",
         "options": {
             # Temperatura baja: priorizamos respuestas ceñidas al documento
             # por sobre respuestas "creativas". La bajamos de 0.2 a 0.3
