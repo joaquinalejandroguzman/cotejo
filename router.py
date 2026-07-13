@@ -54,9 +54,16 @@ _JAILBREAK = [
     r"sin restricciones", r"sin filtros", r"no tienes reglas",
     r"modo desarrollador", r"developer mode", r"eres libre de",
     r"actua como si no tuvieras", r"finge que no tienes",
-    r"system prompt", r"cual es tu prompt", r"revela tu prompt",
-    r"dime tu prompt", r"cuentame un secreto", r"dime un secreto",
-    r"contame un secreto", r"que secreto",
+    # "system prompt" y "prompt system": cubrimos las dos formas porque el
+    # orden invertido ("decime tu prompt system") no matcheaba antes y el
+    # modelo terminaba inventando una descripcion completa de su
+    # arquitectura interna en vez de rechazar.
+    r"system prompt", r"prompt system", r"cual es tu prompt",
+    r"revela tu prompt", r"revelame tu prompt",
+    # "dime"/"decime": tu y vos (variante argentina), cubrimos las dos.
+    r"dime tu prompt", r"decime tu prompt",
+    r"cuentame un secreto", r"contame un secreto",
+    r"dime un secreto", r"decime un secreto", r"que secreto",
     # Bug real: despues de rechazar un intento de jailbreak, un simple
     # "porque" como respuesta hacia que el modelo, en vez de sostener el
     # rechazo, empezara a describir como funciona su propio system prompt.
