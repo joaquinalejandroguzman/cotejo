@@ -90,6 +90,14 @@ class TestOfftopic:
     def test_pregunta_de_negocio_no_es_offtopic(self):
         assert not is_offtopic_question("¿Cuánto tiempo tengo para devolver un producto?")
 
+    def test_como_que_no_es_insistencia_tras_rechazo(self):
+        # Bug real: tras "que hora es" -> rechazo, "como que no" caia al LLM
+        # y alucinaba una respuesta sobre reembolsos.
+        assert is_offtopic_question("¿Como que no?")
+
+    def test_por_que_no_es_insistencia_tras_rechazo(self):
+        assert is_offtopic_question("por que no?")
+
 
 # ---------------------------------------------------------------------------
 # Intentos de jailbreak / prompt injection

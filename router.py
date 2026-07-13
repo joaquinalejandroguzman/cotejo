@@ -43,6 +43,16 @@ _OFFTOPIC = [
     r"contame un chiste", r"decime un chiste", r"contame un poema",
     r"escribime un poema", r"hazme un poema", r"escribime una cancion",
     r"cuanto es \d", r"resolveme esta cuenta", r"cuanto suman",
+
+    # Insistencia corta tras el rechazo (mismo problema que la categoria H
+    # de jailbreak, mas abajo): un "como que no?" solo, sin nada mas,
+    # despues de la respuesta fija de "no tengo esa informacion" es casi
+    # siempre volver a insistir con la misma pregunta fuera de tema, no una
+    # pregunta de negocio nueva. Bug real: "que hora es" -> rechazo ->
+    # "como que no" hacia que el modelo alucinara una respuesta sobre
+    # reembolsos, sin ninguna relacion con la pregunta.
+    r"^como que no\??!?$", r"^como asi que no\??!?$", r"^por que no\??!?$",
+    r"^en serio que no\??!?$", r"^y eso\??!?$",
 ]
 
 # Intentos de jailbreak / prompt injection. Organizados por categoria para
