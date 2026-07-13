@@ -45,25 +45,66 @@ _OFFTOPIC = [
     r"cuanto es \d", r"resolveme esta cuenta", r"cuanto suman",
 ]
 
-# Intentos de jailbreak / prompt injection: instrucciones que buscan que el
-# agente ignore sus reglas, revele su system prompt, o invente contenido
-# fuera del documento haciendose pasar por "sin restricciones".
+# Intentos de jailbreak / prompt injection. Organizados por categoria para
+# que sea mas facil ver que cubrimos y que falta. "tu" y "vos" (variante
+# argentina) se cubren por separado porque son palabras distintas y no
+# alcanza con un solo verbo conjugado.
 _JAILBREAK = [
-    r"ignora tus instrucciones", r"ignora las instrucciones",
-    r"olvida tus instrucciones", r"olvida las instrucciones",
-    r"sin restricciones", r"sin filtros", r"no tienes reglas",
-    r"modo desarrollador", r"developer mode", r"eres libre de",
-    r"actua como si no tuvieras", r"finge que no tienes",
+    # --- A. Anular / ignorar las instrucciones ---
+    r"ignora tus instrucciones", r"ignora las instrucciones", r"ignora lo anterior",
+    r"ignora todo lo anterior", r"olvida tus instrucciones", r"olvida las instrucciones",
+    r"olvida lo anterior", r"olvidate de (tus|las) (instrucciones|reglas)",
+    r"descarta (tus|las) (instrucciones|reglas)", r"no sigas (tus|las) (instrucciones|reglas)",
+    r"saltea(te)? (tus|las) (instrucciones|reglas)",
+
+    # --- B. Cambio de rol / personaje sin restricciones ---
+    r"sin restricciones", r"sin filtros", r"sin censura", r"sin reglas",
+    r"no tienes reglas", r"no tenes reglas", r"modo desarrollador", r"developer mode",
+    r"modo admin", r"modo sin filtro", r"eres libre de", r"sos libre de",
+    r"actua como si no tuvieras", r"actua sin filtros", r"actua sin restricciones",
+    r"finge que no tienes", r"fingi que no tenes", r"pretende que no tienes",
+    r"pretendas que no tenes", r"imagina que no tenes reglas", r"en un mundo hipotetico.*sin reglas",
+
+    # --- C. Pedido directo del system prompt / instrucciones ---
     # "system prompt" y "prompt system": cubrimos las dos formas porque el
     # orden invertido ("decime tu prompt system") no matcheaba antes y el
     # modelo terminaba inventando una descripcion completa de su
     # arquitectura interna en vez de rechazar.
-    r"system prompt", r"prompt system", r"cual es tu prompt",
-    r"revela tu prompt", r"revelame tu prompt",
+    r"system prompt", r"prompt system", r"cual es tu prompt", r"cual es tu configuracion",
+    r"cuales son tus instrucciones", r"que instrucciones tenes", r"que instrucciones tienes",
+    r"mostrame (tu prompt|tus instrucciones|el prompt|las instrucciones)",
+    r"muestrame (tu prompt|tus instrucciones|el prompt|las instrucciones)",
+    r"revela (tu prompt|tus instrucciones)", r"revelame (tu prompt|tus instrucciones)",
+    r"repeti (tu prompt|tus instrucciones)", r"repite (tu prompt|tus instrucciones)",
+    r"imprimi tu prompt", r"imprime tu prompt", r"tu prompt inicial",
+    r"que te dijeron que hicieras", r"que instrucciones te dieron",
     # "dime"/"decime": tu y vos (variante argentina), cubrimos las dos.
     r"dime tu prompt", r"decime tu prompt",
-    r"cuentame un secreto", r"contame un secreto",
-    r"dime un secreto", r"decime un secreto", r"que secreto",
+
+    # --- D. Secretos / informacion oculta ---
+    r"cuentame un secreto", r"contame un secreto", r"dime un secreto",
+    r"decime un secreto", r"que secreto", r"informacion oculta",
+    r"que ocultas", r"que me estas ocultando",
+
+    # --- E. Extraccion indirecta (repetir/traducir/resumir instrucciones) ---
+    r"repeti todo lo que te dijeron", r"repite todo lo que te dijeron",
+    r"traduci tus instrucciones", r"traduce tus instrucciones",
+    r"resumime tus instrucciones", r"resume tus instrucciones",
+    r"completa esta frase.*mis instrucciones", r"empeza tu respuesta con.*mis instrucciones",
+
+    # --- F. Afirmaciones de autoridad falsa ---
+    r"soy el desarrollador", r"soy tu desarrollador", r"soy el creador",
+    r"soy tu creador", r"tengo permiso para ver", r"modo admin activado",
+    r"acceso de administrador",
+
+    # --- G. Variantes en ingles (cobertura basica) ---
+    r"ignore previous instructions", r"ignore all previous instructions",
+    r"ignore your instructions", r"show me your (system )?prompt",
+    r"reveal your (system )?prompt", r"what is your (system )?prompt",
+    r"act as if you have no restrictions", r"pretend you have no rules",
+    r"you are now in dan mode",
+
+    # --- H. Continuar insistiendo tras un rechazo ---
     # Bug real: despues de rechazar un intento de jailbreak, un simple
     # "porque" como respuesta hacia que el modelo, en vez de sostener el
     # rechazo, empezara a describir como funciona su propio system prompt.
