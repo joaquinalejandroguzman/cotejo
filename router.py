@@ -30,12 +30,9 @@ _META_DOCS = [
     r"acceso a (la|tu) documentacion",
 ]
 
-# Preguntas claramente fuera de tema (no tienen nada que ver con ningun
-# documento de negocio posible): fecha/hora, clima, matematica basica y
-# contenido creativo. El modelo deberia responder con el mensaje fijo de
-# "no tengo esa informacion", pero en la practica un modelo chico a veces
-# contesta con un disclaimer generico de IA en vez de seguir la instruccion
-# al pie de la letra - mejor resolverlo aca, como el resto de estos casos.
+# Preguntas fuera de tema (fecha/hora, clima, matematica, contenido
+# creativo): el modelo no siempre sigue la instruccion del prompt al pie
+# de la letra, mejor resolverlo aca.
 _OFFTOPIC = [
     r"que dia es hoy", r"que dia es$", r"que fecha es", r"en que fecha estamos",
     r"que hora es", r"que hora son",
@@ -44,15 +41,24 @@ _OFFTOPIC = [
     r"escribime un poema", r"hazme un poema", r"escribime una cancion",
     r"cuanto es \d", r"resolveme esta cuenta", r"cuanto suman",
 
-    # Insistencia corta tras el rechazo (mismo problema que la categoria H
-    # de jailbreak, mas abajo): un "como que no?" solo, sin nada mas,
-    # despues de la respuesta fija de "no tengo esa informacion" es casi
-    # siempre volver a insistir con la misma pregunta fuera de tema, no una
-    # pregunta de negocio nueva. Bug real: "que hora es" -> rechazo ->
-    # "como que no" hacia que el modelo alucinara una respuesta sobre
-    # reembolsos, sin ninguna relacion con la pregunta.
+    # Insistencia corta tras el rechazo (ver categoria H de jailbreak).
+    # Bug real: "que hora es" -> rechazo -> "como que no" hacia alucinar
+    # una respuesta sobre reembolsos, sin relacion con la pregunta.
     r"^como que no\??!?$", r"^como asi que no\??!?$", r"^por que no\??!?$",
     r"^en serio que no\??!?$", r"^y eso\??!?$",
+]
+
+# Datos de tarjeta: tema sensible con una sola respuesta correcta fija en
+# la Politica de Privacidad. Bug real: el LLM llego a invertir el hecho
+# (decir que SI se guardan) e inventar el CVV y plazos de retencion que no
+# existen en ningun documento. Respuesta fija, no queda en manos del LLM.
+_DATOS_TARJETA = [
+    r"guardan.*(datos|numero|numeros|informacion).*tarjeta",
+    r"almacenan.*(datos|numero|numeros|informacion).*tarjeta",
+    r"(guardan|almacenan).*mi tarjeta",
+    r"(guardan|almacenan).*(el )?cvv",
+    r"tarjeta.*(se guarda|se almacena|queda guardad|queda almacenad)",
+    r"que pasa con.*(datos|numero|numeros).*tarjeta",
 ]
 
 # Intentos de jailbreak / prompt injection. Organizados por categoria para
@@ -77,12 +83,9 @@ _JAILBREAK = [
     r"pretendas que no tenes", r"imagina que no tenes reglas", r"en un mundo hipotetico.*sin reglas",
 
     # --- C. Pedido directo del system prompt / instrucciones ---
-    # "syst\w*" y "pr\w*mpt" (en vez de "system"/"prompt" literales) toleran
-    # errores de tipeo como "systm" o "prmpt" - un typo no deberia bastar
-    # para esquivar el filtro. Cubrimos ademas el orden invertido ("prompt
-    # system") porque el modelo, cuando esto no matcheaba, terminaba
-    # inventando una descripcion completa de su arquitectura interna en vez
-    # de rechazar.
+    # "syst\w*"/"pr\w*mpt" toleran typos ("systm", "prmpt"). Cubre tambien
+    # el orden invertido ("prompt system"), que antes hacia inventar la
+    # arquitectura interna en vez de rechazar.
     r"\bsyst\w*\s+pr\w*mpt\b", r"\bpr\w*mpt\s+syst\w*\b", r"system instructions",
     r"cual es tu prompt", r"cual es tu configuracion",
     r"cuales son tus instrucciones", r"que instrucciones tenes", r"que instrucciones tienes",
@@ -93,10 +96,8 @@ _JAILBREAK = [
     r"repeti (tu prompt|tus instrucciones)", r"repite (tu prompt|tus instrucciones)",
     r"imprimi tu prompt", r"imprime tu prompt", r"tu prompt inicial",
     r"que te dijeron que hicieras", r"que instrucciones te dieron",
-    # "dime"/"decime" (imperativo), "tenes/tienes que decir" (obligacion) y
-    # "necesito/quiero que me digas" (peticion): tres construcciones
-    # gramaticales distintas para pedir lo mismo - y "prompt"/"secreto"
-    # con tolerancia a typos, porque tambien se puede escribir mal.
+    # "dime"/"decime", "tenes que decir", "necesito que me digas": tres
+    # formas de pedir lo mismo, con tolerancia a typos en "prompt"/"secreto".
     r"dime tu pr\w*mpt", r"decime tu pr\w*mpt",
     r"(tenes|tienes) que decir(me)?.*(pr\w*mpt|secreto|instruccion)",
     r"(necesito|quiero) que me (digas|cuentes).*(pr\w*mpt|secreto|instruccion)",
@@ -125,11 +126,8 @@ _JAILBREAK = [
     r"you are now in dan mode",
 
     # --- H. Continuar insistiendo tras un rechazo ---
-    # Bug real: despues de rechazar un intento de jailbreak, un simple
-    # "porque" como respuesta hacia que el modelo, en vez de sostener el
-    # rechazo, empezara a describir como funciona su propio system prompt.
-    # Un mensaje corto y solo (sin nada mas) casi siempre es insistir con
-    # la pregunta anterior, no una pregunta de negocio nueva.
+    # Bug real: tras rechazar un jailbreak, un "porque" solo hacia que el
+    # modelo describiera su propio system prompt en vez de sostener el rechazo.
     r"^porque\??$", r"^por que\??$", r"^dale\??!?$", r"^posta\??!?$",
     r"^en serio\??!?$", r"^vamos\??!?$",
 ]
@@ -167,11 +165,9 @@ def is_greeting(text: str) -> bool:
         m = re.match(p, t)
         if not m:
             continue
-        # No alcanza con que el mensaje EMPIECE con un saludo: hay que
-        # revisar que despues del saludo no quede una pregunta real.
-        # Un umbral de longitud total es fragil (ej: "hola, como compro?"
-        # es corto pero es una pregunta real) - lo que importa es cuanto
-        # texto queda una vez que se saca el saludo en si.
+        # No alcanza con que empiece con saludo: hay que ver si despues
+        # queda una pregunta real (ej: "hola, como compro?" es corto pero
+        # es pregunta real, no un saludo puro).
         resto = t[m.end():].strip(" ,.!?")
         if resto == "" or len(resto.split()) <= 2:
             return True
@@ -187,6 +183,11 @@ def is_meta_docs_question(text: str) -> bool:
 def is_offtopic_question(text: str) -> bool:
     t = _normalize(text)
     return any(re.search(p, t) for p in _OFFTOPIC)
+
+
+def is_card_data_question(text: str) -> bool:
+    t = _normalize(text)
+    return any(re.search(p, t) for p in _DATOS_TARJETA)
 
 
 def greeting_response(company_name: str = None) -> str:
@@ -214,6 +215,15 @@ def offtopic_response(company_name: str = None) -> str:
     )
 
 
+def card_data_response(company_name: str = None) -> str:
+    quien = company_name if company_name else "la tienda"
+    return (
+        f"No, {quien} no almacena los números completos de tu tarjeta. Los "
+        "datos de pago se procesan exclusivamente por pasarelas de pago "
+        "certificadas."
+    )
+
+
 def route(text: str, doc_names: list, company_name: str = None):
     """Devuelve una respuesta directa si el mensaje matchea una regla,
     o None si debe ir al LLM.
@@ -229,6 +239,8 @@ def route(text: str, doc_names: list, company_name: str = None):
         return greeting_response(company_name)
     if is_meta_docs_question(text):
         return meta_docs_response(doc_names, company_name)
+    if is_card_data_question(text):
+        return card_data_response(company_name)
     if is_offtopic_question(text):
         return offtopic_response(company_name)
     return None

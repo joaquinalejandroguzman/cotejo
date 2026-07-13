@@ -8,11 +8,13 @@ from router import (
     is_meta_docs_question,
     is_injection_attempt,
     is_offtopic_question,
+    is_card_data_question,
     route,
     greeting_response,
     meta_docs_response,
     injection_response,
     offtopic_response,
+    card_data_response,
 )
 
 DOC_NAMES = ["Política de Reembolsos y Devoluciones", "Guía de Tiempos y Costos de Envío"]
@@ -97,6 +99,29 @@ class TestOfftopic:
 
     def test_por_que_no_es_insistencia_tras_rechazo(self):
         assert is_offtopic_question("por que no?")
+
+
+# ---------------------------------------------------------------------------
+# Datos de tarjeta: tema sensible con respuesta fija (ver comentario en
+# router.py sobre la alucinacion real que motivo esto).
+# ---------------------------------------------------------------------------
+class TestDatosTarjeta:
+    def test_se_guardan_los_datos_de_mi_tarjeta(self):
+        assert is_card_data_question("¿Se guardan los datos de mi tarjeta después de realizar mi compra?")
+
+    def test_almacenan_numero_de_tarjeta(self):
+        assert is_card_data_question("¿Almacenan el número de mi tarjeta?")
+
+    def test_guardan_el_cvv(self):
+        assert is_card_data_question("¿Guardan el CVV de mi tarjeta?")
+
+    def test_pregunta_de_garantia_no_dispara_datos_tarjeta(self):
+        assert not is_card_data_question("¿Qué garantía tienen los productos?")
+
+    def test_card_data_response_no_confirma_almacenamiento(self):
+        respuesta = card_data_response("TiendaNova")
+        assert "no almacena" in respuesta.lower()
+        assert "cvv" not in respuesta.lower()
 
 
 # ---------------------------------------------------------------------------
