@@ -26,7 +26,7 @@ def _strip_document_hedge(text: str) -> str:
     return nuevo
 
 
-def chat(messages: list, model: str = "llama-3.1-8b-instant", api_key: str = None, timeout: int = 60) -> str:
+def chat(messages: list, model: str = "meta-llama/llama-4-scout-17b-16e-instruct", api_key: str = None, timeout: int = 60) -> str:
     """Envia una conversacion al endpoint de chat completions de Groq y devuelve la respuesta del modelo.
 
     messages: lista de dicts {"role": "system"|"user"|"assistant", "content": str}
@@ -59,6 +59,11 @@ def chat(messages: list, model: str = "llama-3.1-8b-instant", api_key: str = Non
             raise GroqError("La API key de Groq es inválida o no está configurada.") from exc
         if resp.status_code == 429:
             raise GroqError("Se alcanzó el límite de uso gratuito de Groq. Probá de nuevo en un momento.") from exc
+        if resp.status_code == 413:
+            raise GroqError(
+                "La conversación quedó demasiado grande para el plan gratuito de Groq. "
+                "Iniciá un chat nuevo para liberar contexto."
+            ) from exc
         raise GroqError(f"Groq respondió con error: {exc}") from exc
 
     data = resp.json()

@@ -40,12 +40,18 @@ fuera de tema, intentos de prompt injection) terminaba en respuestas
 inventadas. Mover esos casos a código Python determinístico resolvió el
 problema de raíz — más detalle en la sección de tests.
 
+El modelo elegido (`llama-4-scout-17b-16e-instruct`) no es el más chico
+que ofrece Groq: los modelos con menor límite de tokens por minuto en el
+plan gratuito (`llama-3.1-8b-instant`, `llama-3.3-70b-versatile`) no
+alcanzan para los ~8.000 tokens que ocupan los 6 documentos combinados en
+una sola consulta.
+
 ## Stack
 
 | Componente              | Tecnología                                          |
 | ------------------------ | ---------------------------------------------------- |
 | Interfaz                 | Streamlit                                            |
-| Modelo de lenguaje        | Groq API (`llama-3.1-8b-instant`)                    |
+| Modelo de lenguaje        | Groq API (`llama-4-scout-17b-16e-instruct`)          |
 | Extracción de PDF         | pypdf                                                |
 | Comunicación con Groq     | API REST (`/openai/v1/chat/completions`) vía `requests` |
 | Infraestructura           | Streamlit Community Cloud                            |

@@ -20,7 +20,7 @@ from router import route
 DOCS_DIR = os.path.join(os.path.dirname(__file__), "documentos")
 LOGO_PATH = os.path.join(os.path.dirname(__file__), "assets", "logo.png")
 FAVICON_PATH = os.path.join(os.path.dirname(__file__), "assets", "favicon.png")
-GROQ_MODEL = "llama-3.1-8b-instant"
+GROQ_MODEL = "meta-llama/llama-4-scout-17b-16e-instruct"
 
 
 def _get_groq_api_key():
