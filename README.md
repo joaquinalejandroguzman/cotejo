@@ -16,13 +16,15 @@ envíos, métodos de pago, garantía y programa de afiliados, usando la API de
 ## Cumplimiento del challenge
 
 | Requisito | Estado |
-| --- | --- |
+| --- | :---: |
 | Repositorio público en GitHub con historial de commits | ✅ |
 | README con descripción, arquitectura, stack, instrucciones y ejemplos | ✅ |
 | Agente funcional sobre documentación real (6 documentos: privacidad, devoluciones, afiliados, envíos, pagos, garantía) | ✅ |
 | Manejo de casos borde sin depender del LLM (saludos, offtopic, jailbreak, datos sensibles) vía router | ✅ |
 | Suite de tests automatizados (81 tests, pytest) | ✅ |
-| Despliegue público accesible con capturas | ✅ [agente-tiendanova.streamlit.app](https://agente-tiendanova.streamlit.app/) |
+| Deploy público con capturas | ✅ |
+
+<p align="center"><a href="https://agente-tiendanova.streamlit.app/"><strong>DEMO EN VIVO</strong></a></p>
 
 ## Cómo funciona
 
