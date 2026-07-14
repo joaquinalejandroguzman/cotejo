@@ -143,6 +143,13 @@ GROQ_API_KEY = "api_key"
 
 ![Deploy en Streamlit Community Cloud a nombre del autor](docs/screenshots/deploy-streamlit-cloud.png)
 
+El agente no responde sin documentación cargada, y se adapta a cualquier
+documentación que subas:
+
+| Sin documentación cargada | Con documentación genérica |
+| --- | --- |
+| ![Sin documentos, no responde](docs/screenshots/sin-documentos.png) | ![Respondiendo con otra documentación cargada](docs/screenshots/documentacion-generica.png) |
+
 ---
 
 ## 4. Tests
