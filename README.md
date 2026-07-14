@@ -129,7 +129,7 @@ En [share.streamlit.io](https://share.streamlit.io), iniciar sesión con
 GitHub y hacer clic en **Create app**. Elegir el repo
 `agente-tiendanova`, la rama `main` y el archivo principal `app.py`.
 
-**3. Configurar el secret** en Advanced settings → Secrets, pegar:
+**3. Configurar el secret** en Advanced settings → Secrets:
 ```toml
 GROQ_API_KEY = "api_key"
 ```
