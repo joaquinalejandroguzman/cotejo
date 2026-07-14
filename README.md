@@ -125,9 +125,7 @@ contenido se mantiene consistente. Estas son respuestas reales del agente:
 **1. Generar API key de Groq** en [console.groq.com/keys](https://console.groq.com/keys).
 
 **2. Crear la app**
-En [share.streamlit.io](https://share.streamlit.io), iniciar sesión con
-GitHub y hacer clic en **Create app**. Elegir el repo
-`agente-tiendanova`, la rama `main` y el archivo principal `app.py`.
+En [share.streamlit.io](https://share.streamlit.io/), vincular con GitHub → repo `agente-tiendanova` → rama `main` → `app.py`.
 
 **3. Configurar el secret** en Advanced settings → Secrets:
 ```toml
