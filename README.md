@@ -13,6 +13,17 @@ ficticia (TiendaNova) y responde dudas sobre privacidad, devoluciones,
 envíos, métodos de pago, garantía y programa de afiliados, usando la API de
 **Groq** y una interfaz en **Streamlit**.
 
+## Cumplimiento del challenge
+
+| Requisito | Estado |
+| --- | --- |
+| Repositorio público en GitHub con historial de commits | ✅ |
+| README con descripción, arquitectura, stack, instrucciones y ejemplos | ✅ |
+| Agente funcional sobre documentación real (6 documentos: privacidad, devoluciones, afiliados, envíos, pagos, garantía) | ✅ |
+| Manejo de casos borde sin depender del LLM (saludos, offtopic, jailbreak, datos sensibles) vía router | ✅ |
+| Suite de tests automatizados (81 tests, pytest) | ✅ |
+| Despliegue público accesible con capturas | ✅ [agente-tiendanova.streamlit.app](https://agente-tiendanova.streamlit.app/) |
+
 ## Cómo funciona
 
 ```mermaid
