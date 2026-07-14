@@ -23,7 +23,7 @@ sequenceDiagram
 
     U->>S: 1. Pregunta
     S->>S: 2. Extrae texto del PDF (pdf_utils.py, cacheado)
-    S->>S: 3. Router: ¿saludo, meta-pregunta o jailbreak? (router.py, sin LLM)
+    S->>S: 3. Router: ¿saludo, offtopic, meta-pregunta, dato sensible o jailbreak? (router.py, sin LLM)
     Note over S: Si el router no resuelve la pregunta, sigue al modelo
     S->>G: 4. system = documento + historial + pregunta
     G->>G: 5. Genera la respuesta
@@ -122,9 +122,16 @@ GROQ_API_KEY = "api_key"
 ```
 
 **4. Deploy**
-Con un clic queda publicada.
 
 **URL pública**: [agente-tiendanova.streamlit.app](https://agente-tiendanova.streamlit.app/).
+
+**Capturas**
+
+| App desplegada | Respondiendo una pregunta |
+| --- | --- |
+| ![Landing de la app](docs/screenshots/landing.png) | ![Respuesta sobre devoluciones](docs/screenshots/respuesta-devolucion.png) |
+
+![Deploy en Streamlit Community Cloud a nombre del autor](docs/screenshots/deploy-streamlit-cloud.png)
 
 ---
 
@@ -211,5 +218,4 @@ Autorizo el uso de este proyecto con fines pedagógicos y educativos.
 
 ## Autor
 
-**Joaquín A. Guzmán**
-Challenge AlurAgente — Oracle Next Education (ONE) x Alura Latam, 2026.
+**Joaquín A. Guzmán** — 2026.
