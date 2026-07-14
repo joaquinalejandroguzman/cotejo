@@ -34,6 +34,12 @@ def _get_groq_api_key():
 
 GROQ_API_KEY = _get_groq_api_key()
 
+
+@st.cache_data(show_spinner=False)
+def _logo_base64() -> str:
+    with open(LOGO_PATH, "rb") as f:
+        return base64.b64encode(f.read()).decode()
+
 # Documentacion base: 6 documentos separados (en vez de un unico PDF), cada
 # uno enfocado en un tema puntual. Asi el agente puede citar la fuente
 # correcta y es mas facil de mantener que un solo documento gigante.
@@ -63,10 +69,9 @@ EJEMPLOS = [
 
 with st.sidebar:
     if os.path.exists(LOGO_PATH):
-        logo_b64 = base64.b64encode(open(LOGO_PATH, "rb").read()).decode()
         st.markdown(
             "<div style='display:flex; align-items:center; justify-content:center; gap:10px;'>"
-            f"<img src='data:image/png;base64,{logo_b64}' width='32'/>"
+            f"<img src='data:image/png;base64,{_logo_base64()}' width='32'/>"
             "<span style='font-size:1.3rem; font-weight:700;'>TiendaNova</span>"
             "</div>",
             unsafe_allow_html=True,
@@ -244,10 +249,9 @@ Responde siempre en español, breve, claro y cordial.
 col_titulo, col_reset = st.columns([5.6, 1.3], vertical_alignment="center")
 with col_titulo:
     if os.path.exists(LOGO_PATH):
-        logo_b64 = base64.b64encode(open(LOGO_PATH, "rb").read()).decode()
         st.markdown(
             "<div style='display:flex; align-items:center; justify-content:center; gap:14px;'>"
-            f"<img src='data:image/png;base64,{logo_b64}' width='56'/>"
+            f"<img src='data:image/png;base64,{_logo_base64()}' width='56'/>"
             "<h1 style='margin:0; white-space:nowrap; font-size:2.1rem;'>"
             "Agente de Soporte Virtual</h1></div>",
             unsafe_allow_html=True,

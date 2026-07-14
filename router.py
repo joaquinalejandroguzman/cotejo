@@ -19,6 +19,16 @@ _SALUDOS = [
     r"^chau\b", r"^adios\b", r"^hasta luego\b", r"^ok gracias\b",
 ]
 
+# Continuaciones cortas de un saludo que siguen siendo solo cortesia (no una
+# pregunta real). Bug real: con un umbral de "2 palabras o menos" alcanzaba
+# para tratar "hola, hay envios?" como saludo puro y tragarse la pregunta.
+# Mejor listar explicitamente las formas de cortesia conocidas.
+_CORTESIA_CORTA = [
+    r"^como estas$", r"^como andas$", r"^como va$", r"^como vas$",
+    r"^como te va$", r"^todo bien$", r"^que tal$", r"^que contas$",
+    r"^que haces$",
+]
+
 _META_DOCS = [
     r"que documentacion tenes",
     r"que documentos tenes",
@@ -168,9 +178,10 @@ def is_greeting(text: str) -> bool:
             continue
         # No alcanza con que empiece con saludo: hay que ver si despues
         # queda una pregunta real (ej: "hola, como compro?" es corto pero
-        # es pregunta real, no un saludo puro).
+        # es pregunta real, no un saludo puro). Solo se considera saludo
+        # puro si no queda nada o si es una cortesia corta conocida.
         resto = t[m.end():].strip(" ,.!?")
-        if resto == "" or len(resto.split()) <= 2:
+        if resto == "" or any(re.match(p, resto) for p in _CORTESIA_CORTA):
             return True
         return False
     return False

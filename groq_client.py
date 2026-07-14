@@ -67,5 +67,8 @@ def chat(messages: list, model: str = "meta-llama/llama-4-scout-17b-16e-instruct
         raise GroqError(f"Groq respondió con error: {exc}") from exc
 
     data = resp.json()
-    contenido = data["choices"][0]["message"]["content"].strip()
+    try:
+        contenido = data["choices"][0]["message"]["content"].strip()
+    except (KeyError, IndexError) as exc:
+        raise GroqError("Groq devolvió una respuesta con un formato inesperado.") from exc
     return _strip_document_hedge(contenido)

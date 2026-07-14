@@ -12,7 +12,7 @@ def extract_text_from_pdf(path: str) -> str:
     return "\n".join(parts).strip()
 
 
-def truncate_for_context(text: str, max_chars: int = 12000) -> str:
+def truncate_for_context(text: str, max_chars: int) -> str:
     """Recorta el texto si excede un tamano razonable para el contexto del modelo."""
     if len(text) <= max_chars:
         return text

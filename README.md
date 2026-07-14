@@ -3,7 +3,7 @@
 ![Python](https://img.shields.io/badge/Python-3.10+-3776AB?logo=python&logoColor=white)
 ![Streamlit](https://img.shields.io/badge/Streamlit-UI-FF4B4B?logo=streamlit&logoColor=white)
 ![LLM](https://img.shields.io/badge/LLM-Groq%20API-F55036)
-![Pytest](https://img.shields.io/badge/Tests-78%20passed-0A9EDC?logo=pytest&logoColor=white)
+![Pytest](https://img.shields.io/badge/Tests-81%20passed-0A9EDC?logo=pytest&logoColor=white)
 ![License](https://img.shields.io/badge/License-MIT-green)
 
 Challenge AlurAgente — Oracle Next Education (ONE) x Alura Latam
@@ -137,20 +137,22 @@ GROQ_API_KEY = "api_key"
 
 ## 4. Tests
 
-78 tests unitarios (pytest) para `router.py`, `pdf_utils.py` y
-`groq_client.py`. Cubren saludos, preguntas sobre la documentación, los
-intentos de jailbreak / prompt injection que encontré probando el agente a
-mano y evaluando a propósito distintas categorías (anular instrucciones,
-cambio de rol sin restricciones, pedido directo del prompt, extracción
-indirecta, autoridad falsa, variantes en inglés, insistir tras un rechazo
-—tanto de jailbreak como de preguntas fuera de tema—, errores de tipeo en
-"prompt"/"system", variantes gramaticales de "decime"), la limpieza de
-muletillas tipo "según el documento" de las respuestas, el manejo de error
-cuando falta la API key de Groq, y una respuesta fija para preguntas sobre
-si se guardan los datos de la tarjeta del cliente (un tema de seguridad de
-pagos donde probando a mano encontré que el modelo podía invertir el hecho
-e inventar datos como el CVV — demasiado riesgoso para dejarlo en manos del
-LLM).
+81 tests unitarios (pytest) para `router.py`, `pdf_utils.py` y
+`groq_client.py`. Cubren saludos (incluyendo preguntas reales cortas
+disfrazadas de saludo, como "hola, hay envíos?"), preguntas sobre la
+documentación, los intentos de jailbreak / prompt injection que encontré
+probando el agente a mano y evaluando a propósito distintas categorías
+(anular instrucciones, cambio de rol sin restricciones, pedido directo del
+prompt, extracción indirecta, autoridad falsa, variantes en inglés,
+insistir tras un rechazo —tanto de jailbreak como de preguntas fuera de
+tema—, errores de tipeo en "prompt"/"system", variantes gramaticales de
+"decime"), la limpieza de muletillas tipo "según el documento" de las
+respuestas, el manejo de error cuando falta la API key de Groq o cuando
+Groq devuelve una respuesta con formato inesperado, y una respuesta fija
+para preguntas sobre si se guardan los datos de la tarjeta del cliente (un
+tema de seguridad de pagos donde probando a mano encontré que el modelo
+podía invertir el hecho e inventar datos como el CVV — demasiado riesgoso
+para dejarlo en manos del LLM).
 
 ```bash
 pip install -r requirements-dev.txt

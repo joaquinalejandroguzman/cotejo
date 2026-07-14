@@ -55,6 +55,18 @@ class TestSaludos:
         # total no alcanza; hay que mirar que queda despues del saludo.
         assert not is_greeting("hola, como puedo realizar una compra?")
 
+    def test_pregunta_real_corta_tras_saludo_no_es_saludo(self):
+        # Bug real: con el umbral viejo de "2 palabras o menos", una
+        # pregunta real y corta como esta se trataba como saludo puro y
+        # se perdia. Ahora solo cuentan como saludo puro las cortesias
+        # cortas conocidas (listadas explicitamente).
+        assert not is_greeting("hola, hay envios?")
+        assert not is_greeting("hola, tenes garantia?")
+
+    def test_cortesia_corta_tras_saludo_sigue_siendo_saludo(self):
+        assert is_greeting("hola, todo bien?")
+        assert is_greeting("hola, como andas?")
+
 
 # ---------------------------------------------------------------------------
 # Preguntas meta sobre la documentacion

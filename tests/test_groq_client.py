@@ -1,5 +1,6 @@
 import sys
 from pathlib import Path
+from unittest.mock import patch, MagicMock
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
@@ -48,3 +49,19 @@ class TestChatSinApiKey:
             assert False, "deberia haber lanzado GroqError"
         except GroqError as e:
             assert "API key" in str(e)
+
+
+class TestChatRespuestaMalformada:
+    def test_respuesta_sin_choices_lanza_groqerror(self):
+        # Bug potencial: si Groq devuelve 200 pero sin "choices" (respuesta
+        # filtrada, formato inesperado), antes tiraba un KeyError crudo
+        # en vez de un GroqError prolijo como el resto de la funcion.
+        mock_resp = MagicMock()
+        mock_resp.json.return_value = {"choices": []}
+        mock_resp.raise_for_status.return_value = None
+        with patch("groq_client.requests.post", return_value=mock_resp):
+            try:
+                chat([{"role": "user", "content": "hola"}], api_key="fake-key")
+                assert False, "deberia haber lanzado GroqError"
+            except GroqError as e:
+                assert "formato inesperado" in str(e)
