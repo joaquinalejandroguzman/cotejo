@@ -227,8 +227,13 @@ agente_tiendanova/
 
 MIT — ver [LICENSE](LICENSE).
 
-Autorizo el uso de este proyecto con fines pedagógicos y educativos.
+Acorde a los requerimientos del challenge, autorizo el uso de este proyecto con fines educativos.
 
 ## Autor
 
-**Joaquín A. Guzmán** — 2026.
+<div align="center">
+
+**Joaquín A. Guzmán**  
+[LinkedIn](https://www.linkedin.com/in/joaquinalejandroguzman/)
+
+</div>
