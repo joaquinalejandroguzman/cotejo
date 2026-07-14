@@ -2,17 +2,16 @@
 
 ![Python](https://img.shields.io/badge/Python-3.10+-3776AB?logo=python&logoColor=white)
 ![Streamlit](https://img.shields.io/badge/Streamlit-UI-FF4B4B?logo=streamlit&logoColor=white)
-![LLM](https://img.shields.io/badge/LLM-Ollama%20llama3.2%3A3b-000000)
-![Pytest](https://img.shields.io/badge/Tests-76%20passed-0A9EDC?logo=pytest&logoColor=white)
-![OCI](https://img.shields.io/badge/Oracle%20Cloud-Always%20Free-F80000?logo=oracle&logoColor=white)
+![LLM](https://img.shields.io/badge/LLM-Groq%20API-F55036)
+![Pytest](https://img.shields.io/badge/Tests-77%20passed-0A9EDC?logo=pytest&logoColor=white)
 ![License](https://img.shields.io/badge/License-MIT-green)
 
 Challenge AlurAgente — Oracle Next Education (ONE) x Alura Latam
 
 Agente de soporte virtual que lee la documentación de una tienda online
 ficticia (TiendaNova) y responde dudas sobre privacidad, devoluciones,
-envíos, métodos de pago, garantía y programa de afiliados, corriendo con un
-modelo local vía **Ollama** y una interfaz en **Streamlit**.
+envíos, métodos de pago, garantía y programa de afiliados, usando la API de
+**Groq** y una interfaz en **Streamlit**.
 
 ## Cómo funciona
 
@@ -20,50 +19,46 @@ modelo local vía **Ollama** y una interfaz en **Streamlit**.
 sequenceDiagram
     participant U as Usuario
     participant S as Streamlit (app.py)
-    participant O as Ollama
+    participant G as Groq
 
     U->>S: 1. Pregunta
     S->>S: 2. Extrae texto del PDF (pdf_utils.py, cacheado)
     S->>S: 3. Router: ¿saludo, meta-pregunta o jailbreak? (router.py, sin LLM)
     Note over S: Si el router no resuelve la pregunta, sigue al modelo
-    S->>O: 4. system = documento + historial + pregunta
-    O->>O: 5. Genera la respuesta
-    O-->>S: 6. Respuesta
+    S->>G: 4. system = documento + historial + pregunta
+    G->>G: 5. Genera la respuesta
+    G-->>S: 6. Respuesta
     S-->>U: 7. Se muestra en el chat
 ```
 
 Decidí no meter una base vectorial (RAG con embeddings) porque los 6
 documentos de base entran enteros en el contexto del modelo (~8.000 tokens)
 — inyectarlos completos como system prompt es más simple que armar un
-pipeline de embeddings, aunque tuve que subir la ventana de contexto de
-Ollama (`num_ctx`) porque el valor por defecto (2048 tokens) los recortaba en
-silencio. Donde sí tuve que meter algo extra fue el router: con un modelo tan
-chico, confiarle *todo* al prompt (saludos, preguntas fuera de tema, intentos
-de prompt injection) terminaba en respuestas inventadas. Mover esos casos a
-código Python determinístico resolvió el problema de raíz — más detalle en
-la sección de tests.
+pipeline de embeddings. Donde sí tuve que meter algo extra fue el router:
+con un modelo tan chico, confiarle *todo* al prompt (saludos, preguntas
+fuera de tema, intentos de prompt injection) terminaba en respuestas
+inventadas. Mover esos casos a código Python determinístico resolvió el
+problema de raíz — más detalle en la sección de tests.
 
 ## Stack
 
-| Componente              | Tecnología                                |
-| ------------------------ | ------------------------------------------ |
-| Interfaz                 | Streamlit                                  |
-| Modelo de lenguaje        | Ollama (`llama3.2:3b`, corriendo local)    |
-| Extracción de PDF         | pypdf                                      |
-| Comunicación con Ollama   | API REST (`/api/chat`) vía `requests`      |
-| Infraestructura           | Oracle Cloud Infrastructure — Always Free  |
-| Dominio (opcional)        | DuckDNS                                    |
+| Componente              | Tecnología                                          |
+| ------------------------ | ---------------------------------------------------- |
+| Interfaz                 | Streamlit                                            |
+| Modelo de lenguaje        | Groq API (`llama-3.1-8b-instant`)                    |
+| Extracción de PDF         | pypdf                                                |
+| Comunicación con Groq     | API REST (`/openai/v1/chat/completions`) vía `requests` |
+| Infraestructura           | Streamlit Community Cloud                            |
 
 ---
 
 ## 1. Correrlo en local
 
-Se debe tener instalado [Ollama](https://ollama.com/download) y un modelo
-descargado.
+Generá una API key en Groq ([console.groq.com](https://console.groq.com)).
 
 ```bash
-# 1. Descargar el modelo
-ollama pull llama3.2:3b
+# 1. Configurar la API key
+export GROQ_API_KEY=tu_api_key
 
 # 2. Clonar y entrar a la carpeta
 cd agente_tiendanova
@@ -104,58 +99,49 @@ contenido se mantiene consistente. Estas son respuestas reales del agente:
 > TiendaNova opera en los siguientes países: Argentina, México, Colombia,
 > Chile y Perú.
 
+*Estas respuestas se generaron con el modelo anterior (Ollama, local). Las
+vuelvo a probar contra Groq antes de la entrega para confirmar que se
+mantienen igual de precisas.*
+
 ---
 
-## 3. Deploy en Oracle Cloud Infrastructure — Always Free
+## 3. Deploy en Streamlit Community Cloud
 
-**1. Crear la instancia**
-En la consola de OCI: Compute → Instances → Create Instance. Forma "Always
-Free eligible" (Ampere A1, 4 OCPU / 24GB), imagen Ubuntu 22.04, par de
-llaves SSH, instancia con IP pública asignada.
+**1. Generar API key de Groq** en [console.groq.com/keys](https://console.groq.com/keys).
 
-**2. Abrir el puerto 8501**
-En la subred de la instancia: Security Lists → Add Ingress Rule, con Source
-CIDR `0.0.0.0/0`, puerto `8501`, protocolo TCP.
+**2. Crear la app**
+En [share.streamlit.io](https://share.streamlit.io), iniciar sesión con
+GitHub y hacer clic en **Create app**. Elegir el repo
+`agente-tiendanova`, la rama `main` y el archivo principal `app.py`.
 
-**3. Conectarse e instalar todo**
-```bash
-ssh -i tu_clave.pem ubuntu@<IP_PUBLICA>
-
-curl -fsSL https://ollama.com/install.sh | sh
-ollama pull llama3.2:3b
-
-sudo apt update && sudo apt install -y python3-pip
-git clone https://github.com/joaquinalejandroguzman/agente-tiendanova.git
-cd agente-tiendanova
-pip3 install -r requirements.txt
+**3. Configurar el secret** en Advanced settings → Secrets, pegar:
+```toml
+GROQ_API_KEY = "api_key"
 ```
 
-**4. Correr la app expuesta, persistente con tmux**
-```bash
-tmux new -s agente
-streamlit run app.py --server.port 8501 --server.address 0.0.0.0
-```
-Ctrl+B y después D para salir sin cortar el proceso.
+**4. Deploy**
+Con un clic queda publicada.
 
-**URL pública**: `http://<IP_PUBLICA>:8501`.
+**URL pública**: [agente-tiendanova.streamlit.app](https://agente-tiendanova.streamlit.app/).
 
 ---
 
 ## 4. Tests
 
-76 tests unitarios (pytest) para `router.py`, `pdf_utils.py` y
-`ollama_client.py`. Cubren saludos, preguntas sobre la documentación, los
+77 tests unitarios (pytest) para `router.py`, `pdf_utils.py` y
+`groq_client.py`. Cubren saludos, preguntas sobre la documentación, los
 intentos de jailbreak / prompt injection que encontré probando el agente a
 mano y evaluando a propósito distintas categorías (anular instrucciones,
 cambio de rol sin restricciones, pedido directo del prompt, extracción
 indirecta, autoridad falsa, variantes en inglés, insistir tras un rechazo
 —tanto de jailbreak como de preguntas fuera de tema—, errores de tipeo en
 "prompt"/"system", variantes gramaticales de "decime"), la limpieza de
-muletillas tipo "según el documento" de las respuestas, y una respuesta fija
-para preguntas sobre si se guardan los datos de la tarjeta del cliente (un
-tema de seguridad de pagos donde probando a mano encontré que el modelo
-podía invertir el hecho e inventar datos como el CVV — demasiado riesgoso
-para dejarlo en manos del LLM).
+muletillas tipo "según el documento" de las respuestas, el manejo de error
+cuando falta la API key de Groq, y una respuesta fija para preguntas sobre
+si se guardan los datos de la tarjeta del cliente (un tema de seguridad de
+pagos donde probando a mano encontré que el modelo podía invertir el hecho
+e inventar datos como el CVV — demasiado riesgoso para dejarlo en manos del
+LLM).
 
 ```bash
 pip install -r requirements-dev.txt
@@ -180,7 +166,7 @@ reglas. Documento esto en vez de simular que está resuelto.
 agente_tiendanova/
 ├── app.py                    # Interfaz Streamlit + logica del chat
 ├── pdf_utils.py               # Extraccion y combinacion de texto de PDFs
-├── ollama_client.py           # Cliente REST minimalista para Ollama
+├── groq_client.py              # Cliente REST minimalista para la API de Groq
 ├── router.py                  # Router de intencion (saludos, meta-preguntas, anti-jailbreak)
 ├── documentos/                 # Documentacion base del agente (6 PDFs separados)
 │   ├── privacidad_terminos.pdf
@@ -192,9 +178,12 @@ agente_tiendanova/
 ├── tests/
 │   ├── test_router.py
 │   ├── test_pdf_utils.py
-│   └── test_ollama_client.py
+│   └── test_groq_client.py
 ├── docs/
 │   └── screenshots/            # Capturas del deploy
+├── .streamlit/
+│   ├── config.toml             # Tema oscuro fijo + menu de desarrollador oculto
+│   └── secrets.toml.example     # Referencia de que secret hay que configurar
 ├── requirements.txt
 ├── requirements-dev.txt
 ├── LICENSE
@@ -208,8 +197,9 @@ agente_tiendanova/
   más fácil de mantener cada tema por separado.
 - Se puede sumar o reemplazar los PDFs desde la barra lateral, sin tocar
   código.
-- Si cambiás de modelo, el nombre en la barra lateral tiene que coincidir
-  exacto con el que usaste en `ollama pull`.
+- La `GROQ_API_KEY` nunca se commitea: en local va en una variable de
+  entorno, y en Streamlit Community Cloud se configura como secret desde
+  el panel de la app.
 
 ## 7. Licencia
 

@@ -2,24 +2,37 @@
 Agente Inteligente TiendaNova - Challenge AlurAgente (Oracle ONE / Alura Latam)
 
 Streamlit app que lee un documento (PDF) de la tienda y responde preguntas
-de los clientes usando un modelo local servido por Ollama.
+de los clientes usando la API de Groq.
 
 Ejecutar localmente:
-    ollama serve                      # (en otra terminal, si no esta corriendo)
-    ollama pull llama3.2               # una sola vez
+    export GROQ_API_KEY=tu_api_key     # https://console.groq.com/keys
     pip install -r requirements.txt
     streamlit run app.py
 """
+import base64
 import os
 import streamlit as st
 
 from pdf_utils import extract_text_from_pdf, truncate_for_context, combine_documents
-from ollama_client import chat, OllamaError
+from groq_client import chat, GroqError
 from router import route
 
 DOCS_DIR = os.path.join(os.path.dirname(__file__), "documentos")
 LOGO_PATH = os.path.join(os.path.dirname(__file__), "assets", "logo.png")
 FAVICON_PATH = os.path.join(os.path.dirname(__file__), "assets", "favicon.png")
+GROQ_MODEL = "llama-3.1-8b-instant"
+
+
+def _get_groq_api_key():
+    try:
+        if "GROQ_API_KEY" in st.secrets:
+            return st.secrets["GROQ_API_KEY"]
+    except Exception:
+        pass
+    return os.environ.get("GROQ_API_KEY")
+
+
+GROQ_API_KEY = _get_groq_api_key()
 
 # Documentacion base: 6 documentos separados (en vez de un unico PDF), cada
 # uno enfocado en un tema puntual. Asi el agente puede citar la fuente
@@ -50,14 +63,25 @@ EJEMPLOS = [
 
 with st.sidebar:
     if os.path.exists(LOGO_PATH):
-        col_logo, col_nombre = st.columns([1, 4], vertical_alignment="center")
-        with col_logo:
-            st.image(LOGO_PATH, width=32)
-        with col_nombre:
-            st.markdown("##### TiendaNova")
+        logo_b64 = base64.b64encode(open(LOGO_PATH, "rb").read()).decode()
+        st.markdown(
+            "<div style='display:flex; align-items:center; justify-content:center; gap:10px;'>"
+            f"<img src='data:image/png;base64,{logo_b64}' width='32'/>"
+            "<span style='font-size:1.3rem; font-weight:700;'>TiendaNova</span>"
+            "</div>",
+            unsafe_allow_html=True,
+        )
     else:
-        st.markdown("##### 🛍️ TiendaNova")
-    st.caption("Tus dudas de compra, resueltas al instante — sin esperar a soporte.")
+        st.markdown(
+            "<div style='text-align:center; font-size:1.3rem; font-weight:700;'>"
+            "🛍️ TiendaNova</div>",
+            unsafe_allow_html=True,
+        )
+    st.markdown(
+        "<div style='text-align:center; color:#8a8a8a; font-size:0.85rem; "
+        "margin-top:6px; margin-bottom:18px;'>🟢 Online</div>",
+        unsafe_allow_html=True,
+    )
 
     with st.expander("💬 Preguntas frecuentes"):
         for ejemplo in EJEMPLOS:
@@ -76,13 +100,11 @@ with st.sidebar:
         label_visibility="collapsed",
     )
 
-    with st.expander("⚙️ Configuración avanzada"):
-        ollama_host = st.text_input(
-            "Host de Ollama", value=os.environ.get("OLLAMA_HOST", "http://localhost:11434")
-        )
-        model_name = st.text_input(
-            "Modelo", value=os.environ.get("OLLAMA_MODEL", "llama3.2:3b")
-        )
+if not GROQ_API_KEY:
+    st.sidebar.error(
+        "Falta configurar GROQ_API_KEY. Definila como variable de entorno "
+        "en local, o como secret en Streamlit Community Cloud."
+    )
 
 # ---------------------------------------------------------------------------
 # Carga del documento (con cache para no re-leer el PDF en cada mensaje)
@@ -94,7 +116,7 @@ def load_doc_text(file_bytes_or_path):
 
 
 @st.cache_data(show_spinner="Identificando la empresa del documento...")
-def detect_company_name(doc_text: str, model: str, host: str):
+def detect_company_name(doc_text: str, api_key: str, model: str = GROQ_MODEL):
     """Le pregunta al modelo el nombre de la empresa/marca del documento
     cargado, para que el agente se presente con el nombre correcto en vez
     de asumir siempre "TiendaNova". Si no se puede determinar con
@@ -112,8 +134,8 @@ def detect_company_name(doc_text: str, model: str, host: str):
         {"role": "user", "content": muestra},
     ]
     try:
-        respuesta = chat(prompt, model=model, host=host, timeout=30)
-    except OllamaError:
+        respuesta = chat(prompt, model=model, api_key=api_key, timeout=30)
+    except GroqError:
         return None
     respuesta = respuesta.strip().strip('"').strip(".")
     if not respuesta or respuesta.upper() == "DESCONOCIDO" or len(respuesta) > 40:
@@ -155,7 +177,7 @@ doc_text = truncate_for_context(combine_documents(docs), max_chars=45000) if doc
 if incluir_base:
     company_name = "TiendaNova"
 elif docs:
-    company_name = detect_company_name(doc_text, model_name, ollama_host)
+    company_name = detect_company_name(doc_text, GROQ_API_KEY)
 else:
     company_name = None
 
@@ -219,13 +241,28 @@ Responde siempre en español, breve, claro y cordial.
 # ---------------------------------------------------------------------------
 # UI principal
 # ---------------------------------------------------------------------------
-col_logo_main, col_titulo, col_reset = st.columns([1, 4, 1.3], vertical_alignment="center")
-with col_logo_main:
-    if os.path.exists(LOGO_PATH):
-        st.image(LOGO_PATH, width=56)
+col_titulo, col_reset = st.columns([5.6, 1.3], vertical_alignment="center")
 with col_titulo:
-    st.title("TiendaNova")
-    st.caption("Agente inteligente · Challenge AlurAgente")
+    if os.path.exists(LOGO_PATH):
+        logo_b64 = base64.b64encode(open(LOGO_PATH, "rb").read()).decode()
+        st.markdown(
+            "<div style='display:flex; align-items:center; justify-content:center; gap:14px;'>"
+            f"<img src='data:image/png;base64,{logo_b64}' width='56'/>"
+            "<h1 style='margin:0; white-space:nowrap; font-size:2.1rem;'>"
+            "Agente de Soporte Virtual</h1></div>",
+            unsafe_allow_html=True,
+        )
+    else:
+        st.markdown(
+            "<h1 style='text-align:center; margin:0; font-size:2.1rem;'>"
+            "🛍️ Agente de Soporte Virtual</h1>",
+            unsafe_allow_html=True,
+        )
+    st.markdown(
+        "<div style='text-align:center; color:#8a8a8a; font-size:0.9rem;'>"
+        "Devoluciones · Envíos · Pagos · Garantía · Privacidad · Afiliados</div>",
+        unsafe_allow_html=True,
+    )
 with col_reset:
     if st.button("🔄 Nuevo chat", use_container_width=True):
         st.session_state.messages = []
@@ -265,8 +302,8 @@ if question:
             llm_messages = [{"role": "system", "content": SYSTEM_PROMPT}] + st.session_state.messages
             with st.spinner("Pensando..."):
                 try:
-                    answer = chat(llm_messages, model=model_name, host=ollama_host)
-                except OllamaError as e:
+                    answer = chat(llm_messages, model=GROQ_MODEL, api_key=GROQ_API_KEY)
+                except GroqError as e:
                     answer = f"⚠️ {e}"
             st.markdown(answer)
 

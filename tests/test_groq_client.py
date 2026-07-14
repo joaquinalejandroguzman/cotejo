@@ -3,7 +3,7 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
-from ollama_client import _strip_document_hedge
+from groq_client import _strip_document_hedge, chat, GroqError
 
 
 class TestStripDocumentHedge:
@@ -37,3 +37,14 @@ class TestStripDocumentHedge:
     def test_respuesta_sin_muletilla_no_se_modifica(self):
         resultado = _strip_document_hedge("Sí, hacemos envíos a Argentina.")
         assert resultado == "Sí, hacemos envíos a Argentina."
+
+
+class TestChatSinApiKey:
+    def test_chat_sin_api_key_lanza_error_claro(self):
+        # Bug potencial: sin GROQ_API_KEY configurada, la app no deberia
+        # tirar un traceback feo sino un mensaje claro para el usuario.
+        try:
+            chat([{"role": "user", "content": "hola"}], api_key=None)
+            assert False, "deberia haber lanzado GroqError"
+        except GroqError as e:
+            assert "API key" in str(e)
