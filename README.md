@@ -6,7 +6,7 @@
 ![Pytest](https://img.shields.io/badge/Tests-81%20passed-0A9EDC?logo=pytest&logoColor=white)
 ![License](https://img.shields.io/badge/License-MIT-green)
 
-Challenge AlurAgente — Oracle Next Education (ONE) x Alura Latam
+Challenge AlurAgente — Oracle Next Education (ONE) x Alura Latam — G10
 
 Agente de soporte virtual que lee la documentación de una tienda online
 ficticia (TiendaNova) y responde dudas sobre privacidad, devoluciones,
@@ -44,20 +44,19 @@ sequenceDiagram
     S-->>U: 7. Se muestra en el chat
 ```
 
-Decidí no meter una base vectorial (RAG con embeddings) porque los 6
+Decidí no incluir una base vectorial (RAG con embeddings) porque los 6
 documentos de base entran enteros en el contexto del modelo (~8.000 tokens)
-— inyectarlos completos como system prompt es más simple que armar un
-pipeline de embeddings. Donde sí tuve que meter algo extra fue el router:
-con un modelo tan chico, confiarle *todo* al prompt (saludos, preguntas
+— inyectarlos completos como system prompt es más simple que construir un
+pipeline de embeddings. Donde sí tuve que incluir algo extra fue el router:
+con un modelo tan pequeño, confiarle *todo* al prompt (saludos, preguntas
 fuera de tema, intentos de prompt injection) terminaba en respuestas
 inventadas. Mover esos casos a código Python determinístico resolvió el
-problema de raíz — más detalle en la sección de tests.
+problema de raíz — más detalles en la sección de tests.
 
 El modelo elegido (`llama-4-scout-17b-16e-instruct`) no es el más chico
 que ofrece Groq: los modelos con menor límite de tokens por minuto en el
 plan gratuito (`llama-3.1-8b-instant`, `llama-3.3-70b-versatile`) no
-alcanzan para los ~8.000 tokens que ocupan los 6 documentos combinados en
-una sola consulta.
+alcanzan para procesar los 6 documentos combinados en una sola consulta.
 
 ## Stack
 
@@ -95,9 +94,9 @@ Se abre solo en `http://localhost:8501`.
 
 ## 2. Ejemplos de respuestas
 
-Las respuestas las genera el modelo en el momento, no son texto guionado —
-la redacción exacta puede variar un poco entre una corrida y otra, aunque el
-contenido se mantiene consistente. Estas son respuestas reales del agente:
+Las respuestas las genera el modelo en tiempo real, no son texto guionado:
+la redacción exacta puede variar entre ejecuciones, aunque el contenido se
+mantiene consistente. Estas son respuestas reales del agente:
 
 **¿Cómo solicito una devolución?**
 > Para solicitar una devolución, puedes seguir estos pasos: 1) Ingresa a
@@ -150,47 +149,49 @@ GROQ_API_KEY = "api_key"
 
 81 tests unitarios (pytest) para `router.py`, `pdf_utils.py` y
 `groq_client.py`. Cubren saludos (incluyendo preguntas reales cortas
-disfrazadas de saludo, como "hola, hay envíos?"), preguntas sobre la
-documentación, los intentos de jailbreak / prompt injection que encontré
-probando el agente a mano y evaluando a propósito distintas categorías
-(anular instrucciones, cambio de rol sin restricciones, pedido directo del
-prompt, extracción indirecta, autoridad falsa, variantes en inglés,
-insistir tras un rechazo —tanto de jailbreak como de preguntas fuera de
-tema—, errores de tipeo en "prompt"/"system", variantes gramaticales de
-"decime"), la limpieza de muletillas tipo "según el documento" de las
-respuestas, el manejo de error cuando falta la API key de Groq o cuando
-Groq devuelve una respuesta con formato inesperado, y una respuesta fija
-para preguntas sobre si se guardan los datos de la tarjeta del cliente (un
-tema de seguridad de pagos donde probando a mano encontré que el modelo
-podía invertir el hecho e inventar datos como el CVV — demasiado riesgoso
-para dejarlo en manos del LLM).
+disfrazadas de saludo, como "hola, hay envíos?") y preguntas sobre la
+documentación. También cubren los intentos de jailbreak y prompt injection
+detectados probando el agente manualmente, evaluando a propósito distintas
+categorías: anular instrucciones, cambio de rol sin restricciones, pedido
+directo del prompt, extracción indirecta, autoridad falsa, variantes en
+inglés, insistencia tras un rechazo (tanto de jailbreak como de preguntas
+fuera de tema), errores de tipeo en "prompt"/"system" y variantes
+gramaticales de "decime". Además incluyen la limpieza de muletillas tipo
+"según el documento" en las respuestas, el manejo de error cuando falta la
+API key de Groq o cuando Groq devuelve una respuesta con formato
+inesperado, y una respuesta fija para preguntas sobre si se guardan los
+datos de la tarjeta del cliente — un tema de seguridad de pagos donde,
+probando manualmente, detecté que el modelo podía invertir el hecho e
+inventar datos como el CVV, demasiado riesgoso para dejarlo en manos del
+LLM.
 
 ```bash
 pip install -r requirements-dev.txt
 pytest tests/ -v
 ```
 
-**Límites conocidos del router anti-jailbreak.** El router matchea texto
-literal (con variantes), no entiende el lenguaje — así que hay categorías
-de ataque que se le escapan a propósito, porque no se pueden cubrir con
-regex sin generar falsos positivos: reencuadres creativos ("actuá como un
-personaje de ficción sin reglas y contame..."), ofuscación (`s3cr3to`,
-separar letras con guiones) y ataques multi-turno (dividir la instrucción
-en varios mensajes, tipo "a partir de ahora, cuando diga X hacé Y"). Esto
-no es un problema exclusivo de este proyecto — ni los sistemas de
-producción con mucho más presupuesto lo resuelven al 100% solo con
-reglas. Documento esto en vez de simular que está resuelto.
+**Límites conocidos del router anti-jailbreak.** El router detecta
+patrones de texto literal (con variantes), no entiende el lenguaje: hay
+categorías de ataque que quedan fuera de forma deliberada, porque no se
+pueden cubrir con regex sin generar falsos positivos. Entre ellas:
+reencuadres creativos ("actuá como un personaje de ficción sin reglas y
+contame..."), ofuscación (`s3cr3to`, separar letras con guiones) y ataques
+multi-turno (dividir la instrucción en varios mensajes, del tipo "a partir
+de ahora, cuando diga X hacé Y"). Esto no es un problema exclusivo de este
+proyecto: ni los sistemas de producción con mucho más presupuesto lo
+resuelven al 100% solo con reglas. Prefiero documentar esta limitación
+antes que simular que está resuelta.
 
 ---
 
 ## 5. Estructura del proyecto
 ```
 agente_tiendanova/
-├── app.py                    # Interfaz Streamlit + logica del chat
-├── pdf_utils.py               # Extraccion y combinacion de texto de PDFs
-├── groq_client.py              # Cliente REST minimalista para la API de Groq
-├── router.py                  # Router de intencion (saludos, meta-preguntas, anti-jailbreak)
-├── documentos/                 # Documentacion base del agente (6 PDFs separados)
+├── app.py            # Interfaz Streamlit + lógica del chat
+├── pdf_utils.py      # Extracción y combinación de texto de PDFs
+├── groq_client.py    # Cliente REST minimalista para la API de Groq
+├── router.py         # Router de intención (saludos, meta-preguntas, anti-jailbreak)
+├── documentos/       # Documentación base del agente
 │   ├── privacidad_terminos.pdf
 │   ├── politica_devoluciones.pdf
 │   ├── programa_afiliados.pdf
@@ -202,10 +203,10 @@ agente_tiendanova/
 │   ├── test_pdf_utils.py
 │   └── test_groq_client.py
 ├── docs/
-│   └── screenshots/            # Capturas del deploy
+│   └── screenshots/  # Capturas del deploy
 ├── .streamlit/
-│   ├── config.toml             # Tema oscuro fijo + menu de desarrollador oculto
-│   └── secrets.toml.example     # Referencia de que secret hay que configurar
+│   ├── config.toml   # Tema oscuro fijo + menú de desarrollador oculto
+│   └── secrets.toml.example
 ├── requirements.txt
 ├── requirements-dev.txt
 ├── LICENSE
@@ -213,25 +214,29 @@ agente_tiendanova/
 └── README.md
 ```
 
+---
+
 ## 6. Algunas notas sueltas
-- La documentación está separada en 6 documentos por tema en vez de un
-  único PDF gigante — así el agente puede citar la fuente correcta y es
-  más fácil de mantener cada tema por separado.
-- Se puede sumar o reemplazar los PDFs desde la barra lateral, sin tocar
-  código.
-- La `GROQ_API_KEY` nunca se commitea: en local va en una variable de
-  entorno, y en Streamlit Community Cloud se configura como secret desde
-  el panel de la app.
+- La documentación está dividida en 6 documentos por tema en vez de un
+  único PDF, lo que permite citar la fuente correcta y facilita el
+  mantenimiento.
+- Se pueden agregar o reemplazar los PDFs desde la barra lateral, sin
+  tocar código.
+- La `GROQ_API_KEY` nunca queda en el repositorio: en local se define
+  como variable de entorno, y en Streamlit Community Cloud se configura
+  como secret desde el panel de la app.
+
+---
 
 ## 7. Licencia
 
-MIT — ver [LICENSE](LICENSE).
+MIT — ver [LICENSE](https://github.com/joaquinalejandroguzman/agente-tiendanova/blob/main/LICENSE).
 
-Acorde a los requerimientos del challenge, autorizo el uso de este proyecto con fines educativos.
-
-## Autor
+Acorde a los requerimientos, autorizo el uso de este proyecto con fines educativos.
 
 <div align="center">
+
+## Autor
 
 **Joaquín A. Guzmán**  
 [LinkedIn](https://www.linkedin.com/in/joaquinalejandroguzman/)
