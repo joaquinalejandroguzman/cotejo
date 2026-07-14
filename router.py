@@ -115,7 +115,8 @@ _JAILBREAK = [
 
     # --- F. Afirmaciones de autoridad falsa ---
     r"soy el desarrollador", r"soy tu desarrollador", r"soy el creador",
-    r"soy tu creador", r"tengo permiso para ver", r"modo admin activado",
+    r"soy tu creador", r"soy( el| tu)? admin\b", r"soy administrador",
+    r"tengo permiso para ver", r"modo admin activado",
     r"acceso de administrador",
 
     # --- G. Variantes en ingles (cobertura basica) ---

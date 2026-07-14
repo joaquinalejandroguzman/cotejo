@@ -3,7 +3,7 @@
 ![Python](https://img.shields.io/badge/Python-3.10+-3776AB?logo=python&logoColor=white)
 ![Streamlit](https://img.shields.io/badge/Streamlit-UI-FF4B4B?logo=streamlit&logoColor=white)
 ![LLM](https://img.shields.io/badge/LLM-Groq%20API-F55036)
-![Pytest](https://img.shields.io/badge/Tests-77%20passed-0A9EDC?logo=pytest&logoColor=white)
+![Pytest](https://img.shields.io/badge/Tests-78%20passed-0A9EDC?logo=pytest&logoColor=white)
 ![License](https://img.shields.io/badge/License-MIT-green)
 
 Challenge AlurAgente — Oracle Next Education (ONE) x Alura Latam
@@ -87,27 +87,23 @@ la redacción exacta puede variar un poco entre una corrida y otra, aunque el
 contenido se mantiene consistente. Estas son respuestas reales del agente:
 
 **¿Cómo solicito una devolución?**
-> Para solicitar una devolución, debes seguir estos pasos: 1) Ingresar a
-> "Mis Pedidos" en la cuenta del cliente. 2) Seleccionar el pedido y elegir
-> "Solicitar devolución". 3) Indicar el motivo de la devolución (producto
+> Para solicitar una devolución, puedes seguir estos pasos: 1) Ingresa a
+> "Mis Pedidos" en tu cuenta de cliente. 2) Selecciona el pedido que deseas
+> devolver. 3) Elige "Solicitar devolución". 4) Indica el motivo (producto
 > defectuoso, talla incorrecta, no cumplió expectativas, error en el
-> pedido, etc.). 4) Imprimir la etiqueta de envío de devolución (gratuita
-> si el motivo es error de TiendaNova o producto defectuoso; a cargo del
-> cliente en los demás casos).
+> pedido, etc.). 5) Imprime la etiqueta de envío de devolución, gratuita si
+> el motivo es un error de TiendaNova o un producto defectuoso, y a cargo
+> del cliente en los demás casos.
 
 **¿Qué métodos de pago aceptan?**
-> Aceptan los siguientes métodos de pago: tarjetas de crédito y débito
-> (Visa, Mastercard, American Express), transferencia bancaria y
-> billeteras digitales (Mercado Pago, PayPal). La disponibilidad puede
-> variar según el país y la categoría del producto.
+> TiendaNova acepta tarjetas de crédito y débito (Visa, Mastercard,
+> American Express), transferencia bancaria y billeteras digitales
+> (Mercado Pago, PayPal). La disponibilidad puede variar por país,
+> categoría y monto.
 
 **¿En qué países opera TiendaNova?**
 > TiendaNova opera en los siguientes países: Argentina, México, Colombia,
 > Chile y Perú.
-
-*Estas respuestas se generaron con el modelo anterior (Ollama, local). Las
-vuelvo a probar contra Groq antes de la entrega para confirmar que se
-mantienen igual de precisas.*
 
 ---
 
@@ -134,7 +130,7 @@ Con un clic queda publicada.
 
 ## 4. Tests
 
-77 tests unitarios (pytest) para `router.py`, `pdf_utils.py` y
+78 tests unitarios (pytest) para `router.py`, `pdf_utils.py` y
 `groq_client.py`. Cubren saludos, preguntas sobre la documentación, los
 intentos de jailbreak / prompt injection que encontré probando el agente a
 mano y evaluando a propósito distintas categorías (anular instrucciones,
