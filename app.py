@@ -14,13 +14,20 @@ import os
 import streamlit as st
 
 from pdf_utils import extract_text_from_pdf, truncate_for_context, combine_documents
-from groq_client import chat, GroqError
+from groq_client import chat, GroqError, DEFAULT_MODEL
 from router import route
+from doc_selector import select_relevant_docs
 
 DOCS_DIR = os.path.join(os.path.dirname(__file__), "documentos")
 LOGO_PATH = os.path.join(os.path.dirname(__file__), "assets", "logo.png")
 FAVICON_PATH = os.path.join(os.path.dirname(__file__), "assets", "favicon.png")
-GROQ_MODEL = "meta-llama/llama-4-scout-17b-16e-instruct"
+GROQ_MODEL = DEFAULT_MODEL
+
+# Cuantos mensajes del historial se le mandan al modelo. El chat completo
+# viaja en cada request, asi que una conversacion larga se comia la cuota de
+# tokens por minuto del plan gratuito y terminaba en 429/413. Con 6 mensajes
+# (3 idas y vueltas) alcanza para sostener el contexto de la charla.
+MAX_HISTORY_MESSAGES = 6
 
 
 def _get_groq_api_key():
@@ -173,7 +180,10 @@ st.sidebar.markdown(
     unsafe_allow_html=True,
 )
 
-doc_text = truncate_for_context(combine_documents(docs), max_chars=45000) if docs else ""
+# Texto completo de todos los documentos. Se usa solo para detectar el
+# nombre de la empresa (mira los primeros 3.000 caracteres); lo que viaja al
+# LLM en cada pregunta lo arma select_relevant_docs mas abajo.
+doc_text_completo = truncate_for_context(combine_documents(docs), max_chars=45000) if docs else ""
 
 # Nombre de la empresa: si esta la documentacion base de TiendaNova activada,
 # es TiendaNova (no hace falta preguntarle al modelo). Si el usuario cargo
@@ -182,7 +192,7 @@ doc_text = truncate_for_context(combine_documents(docs), max_chars=45000) if doc
 if incluir_base:
     company_name = "TiendaNova"
 elif docs:
-    company_name = detect_company_name(doc_text, GROQ_API_KEY)
+    company_name = detect_company_name(doc_text_completo, GROQ_API_KEY)
 else:
     company_name = None
 
@@ -190,7 +200,14 @@ rol_agente = f"de {company_name}" if company_name else "virtual"
 tema_relacion = f"con {company_name}" if company_name else "con el contenido del documento"
 contacto = "soporte@tiendanova.com" if company_name == "TiendaNova" else "el soporte correspondiente"
 
-SYSTEM_PROMPT = f"""Eres el agente de soporte {rol_agente}. Respondes basandote
+
+def build_system_prompt(doc_text: str) -> str:
+    """Arma el system prompt con los documentos elegidos para esta pregunta.
+
+    Es una funcion y no una constante porque el bloque de documentos ya no es
+    fijo: cambia segun lo que pregunte el cliente (ver doc_selector).
+    """
+    return f"""Eres el agente de soporte {rol_agente}. Respondes basandote
 UNICAMENTE en la informacion del documento de mas abajo.
 
 Antes de responder, fijate con atencion si el documento cubre el tema de la
@@ -303,7 +320,14 @@ if question:
             answer = routed_answer
             st.markdown(answer)
         else:
-            llm_messages = [{"role": "system", "content": SYSTEM_PROMPT}] + st.session_state.messages
+            # Solo los documentos que hablan del tema preguntado, y solo los
+            # ultimos mensajes de la charla: mandar los 6 documentos enteros
+            # mas el historial completo agotaba la cuota de tokens por
+            # minuto del plan gratuito de Groq.
+            relevantes = select_relevant_docs(question, docs)
+            system_prompt = build_system_prompt(combine_documents(relevantes))
+            historial = st.session_state.messages[-MAX_HISTORY_MESSAGES:]
+            llm_messages = [{"role": "system", "content": system_prompt}] + historial
             with st.spinner("Pensando..."):
                 try:
                     answer = chat(llm_messages, model=GROQ_MODEL, api_key=GROQ_API_KEY)

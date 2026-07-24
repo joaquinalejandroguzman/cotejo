@@ -3,7 +3,7 @@
 ![Python](https://img.shields.io/badge/Python-3.10+-3776AB?logo=python&logoColor=white)
 ![Streamlit](https://img.shields.io/badge/Streamlit-UI-FF4B4B?logo=streamlit&logoColor=white)
 ![LLM](https://img.shields.io/badge/LLM-Groq%20API-F55036)
-![Pytest](https://img.shields.io/badge/Tests-81%20passed-0A9EDC?logo=pytest&logoColor=white)
+![Pytest](https://img.shields.io/badge/Tests-103%20passed-0A9EDC?logo=pytest&logoColor=white)
 ![License](https://img.shields.io/badge/License-MIT-green)
 
 Challenge AlurAgente — Oracle Next Education (ONE) x Alura Latam — G10
@@ -21,7 +21,7 @@ envíos, métodos de pago, garantía y programa de afiliados, usando la API de
 | README con descripción, arquitectura, stack, instrucciones y ejemplos | ✅ |
 | Agente funcional sobre documentación real (6 documentos: privacidad, devoluciones, afiliados, envíos, pagos, garantía) | ✅ |
 | Manejo de casos borde sin depender del LLM (saludos, offtopic, jailbreak, datos sensibles) vía router | ✅ |
-| Suite de tests automatizados (81 tests, pytest) | ✅ |
+| Suite de tests automatizados (103 tests, pytest) | ✅ |
 | Deploy público con capturas | ✅ |
 
 <p align="center"><a href="https://agente-tiendanova.streamlit.app/"><strong>DEMO EN VIVO</strong></a></p>
@@ -44,26 +44,41 @@ sequenceDiagram
     S-->>U: 7. Se muestra en el chat
 ```
 
-Decidí no incluir una base vectorial (RAG con embeddings) porque los 6
-documentos de base entran enteros en el contexto del modelo (~8.000 tokens)
-— inyectarlos completos como system prompt es más simple que construir un
-pipeline de embeddings. Donde sí tuve que incluir algo extra fue el router:
-con un modelo tan pequeño, confiarle *todo* al prompt (saludos, preguntas
-fuera de tema, intentos de prompt injection) terminaba en respuestas
-inventadas. Mover esos casos a código Python determinístico resolvió el
-problema de raíz — más detalles en la sección de tests.
+Decidí no incluir una base vectorial (RAG con embeddings): para 6
+documentos, un ranking léxico (TF-IDF calculado sobre los propios
+documentos cargados, en `doc_selector.py`) alcanza para elegir cuál
+responde la pregunta, y no arrastra la infraestructura de un pipeline de
+embeddings. Donde sí tuve que incluir algo extra fue el router: con un
+modelo chico, confiarle *todo* al prompt (saludos, preguntas fuera de tema,
+intentos de prompt injection) terminaba en respuestas inventadas. Mover
+esos casos a código Python determinístico resolvió el problema de raíz —
+más detalles en la sección de tests.
 
-El modelo elegido (`llama-4-scout-17b-16e-instruct`) no es el más chico
-que ofrece Groq: los modelos con menor límite de tokens por minuto en el
-plan gratuito (`llama-3.1-8b-instant`, `llama-3.3-70b-versatile`) no
-alcanzan para procesar los 6 documentos combinados en una sola consulta.
+### Por qué no se mandan los 6 documentos enteros
+
+La primera versión inyectaba los 6 documentos completos en el system prompt:
+~31.700 caracteres, casi 8.000 tokens por pregunta. Andaba mientras el
+modelo tuvo un límite de tokens por minuto holgado, pero es frágil — una
+sola consulta consumía la cuota de todo el minuto en el plan gratuito.
+
+Hoy cada pregunta se puntúa contra los documentos y solo viajan los del tema
+consultado (~2.500-3.500 tokens), junto con los últimos 6 mensajes de la
+conversación en vez del historial completo. Con eso entra cómodo en los
+límites del plan gratuito y quedan varias preguntas por minuto disponibles.
+
+> **Nota sobre el modelo:** Groq da de baja modelos con fecha fija y, una
+> vez apagados, la API responde `404`. El modelo original de este proyecto
+> (`meta-llama/llama-4-scout-17b-16e-instruct`) se apagó el **17/07/2026** y
+> dejó la app caída hasta que se actualizó. Si vuelve a aparecer un 404,
+> revisar [las deprecaciones de Groq](https://console.groq.com/docs/deprecations)
+> y actualizar `DEFAULT_MODEL` en `groq_client.py`.
 
 ## Stack
 
 | Componente              | Tecnología                                          |
 | ------------------------ | ---------------------------------------------------- |
 | Interfaz                 | Streamlit                                            |
-| Modelo de lenguaje        | Groq API (`llama-4-scout-17b-16e-instruct`)          |
+| Modelo de lenguaje        | Groq API (`llama-3.3-70b-versatile`)                 |
 | Extracción de PDF         | pypdf                                                |
 | Comunicación con Groq     | API REST (`/openai/v1/chat/completions`) vía `requests` |
 | Infraestructura           | Streamlit Community Cloud                            |
@@ -154,8 +169,8 @@ documentación que subas:
 
 ## 4. Tests
 
-81 tests unitarios (pytest) para `router.py`, `pdf_utils.py` y
-`groq_client.py`. Cubren saludos (incluyendo preguntas reales cortas
+103 tests unitarios (pytest) para `router.py`, `pdf_utils.py`,
+`doc_selector.py` y `groq_client.py`. Cubren saludos (incluyendo preguntas reales cortas
 disfrazadas de saludo, como "hola, hay envíos?") y preguntas sobre la
 documentación. También cubren los intentos de jailbreak y prompt injection
 detectados probando el agente manualmente, evaluando a propósito distintas
@@ -198,6 +213,7 @@ agente_tiendanova/
 ├── pdf_utils.py      # Extracción y combinación de texto de PDFs
 ├── groq_client.py    # Cliente REST minimalista para la API de Groq
 ├── router.py         # Router de intención (saludos, meta-preguntas, anti-jailbreak)
+├── doc_selector.py   # Elige qué documentos entran en el contexto de cada pregunta
 ├── documentos/       # Documentación base del agente
 │   ├── privacidad_terminos.pdf
 │   ├── politica_devoluciones.pdf
@@ -208,6 +224,7 @@ agente_tiendanova/
 ├── tests/
 │   ├── test_router.py
 │   ├── test_pdf_utils.py
+│   ├── test_doc_selector.py
 │   └── test_groq_client.py
 ├── docs/
 │   └── screenshots/  # Capturas del deploy

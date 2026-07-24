@@ -4,6 +4,13 @@ import requests
 
 API_URL = "https://api.groq.com/openai/v1/chat/completions"
 
+# Groq da de baja modelos con fecha fija y, una vez apagados, el endpoint
+# responde 404. El modelo anterior (meta-llama/llama-4-scout-17b-16e-instruct)
+# se apago el 17/07/2026 y la app quedo caida hasta que se cambio este valor.
+# Antes de tocarlo, verificar la fecha de baja en
+# https://console.groq.com/docs/deprecations
+DEFAULT_MODEL = "llama-3.3-70b-versatile"
+
 
 class GroqError(Exception):
     pass
@@ -26,7 +33,7 @@ def _strip_document_hedge(text: str) -> str:
     return nuevo
 
 
-def chat(messages: list, model: str = "meta-llama/llama-4-scout-17b-16e-instruct", api_key: str = None, timeout: int = 60) -> str:
+def chat(messages: list, model: str = DEFAULT_MODEL, api_key: str = None, timeout: int = 60) -> str:
     """Envia una conversacion al endpoint de chat completions de Groq y devuelve la respuesta del modelo.
 
     messages: lista de dicts {"role": "system"|"user"|"assistant", "content": str}
@@ -57,6 +64,15 @@ def chat(messages: list, model: str = "meta-llama/llama-4-scout-17b-16e-instruct
     except requests.exceptions.HTTPError as exc:
         if resp.status_code == 401:
             raise GroqError("La API key de Groq es inválida o no está configurada.") from exc
+        if resp.status_code == 404:
+            # Caso real: Groq apago el modelo que teniamos configurado y el
+            # mensaje generico ("404 Client Error") no dejaba ver la causa.
+            raise GroqError(
+                f"El modelo '{model}' ya no está disponible en Groq (404). "
+                "Seguramente fue dado de baja: revisá "
+                "https://console.groq.com/docs/deprecations y actualizá "
+                "DEFAULT_MODEL en groq_client.py."
+            ) from exc
         if resp.status_code == 429:
             raise GroqError("Se alcanzó el límite de uso gratuito de Groq. Probá de nuevo en un momento.") from exc
         if resp.status_code == 413:
