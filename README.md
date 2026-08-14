@@ -1,17 +1,29 @@
+<div align="center">
+
 # Agente Inteligente TiendaNova
 
-![Python](https://img.shields.io/badge/Python-3.10+-3776AB?logo=python&logoColor=white)
-![Streamlit](https://img.shields.io/badge/Streamlit-UI-FF4B4B?logo=streamlit&logoColor=white)
-![LLM](https://img.shields.io/badge/LLM-Groq%20API-F55036)
-![Pytest](https://img.shields.io/badge/Tests-103%20passed-0A9EDC?logo=pytest&logoColor=white)
-![License](https://img.shields.io/badge/License-MIT-green)
+**Agente de IA para consultas sobre documentos propios**
 
-Challenge AlurAgente — Oracle Next Education (ONE) x Alura Latam — G10
+[![Python](https://img.shields.io/badge/Python_3.10+-3776AB?style=for-the-badge&logo=python&logoColor=white)](https://www.python.org/)
+[![Streamlit](https://img.shields.io/badge/Streamlit_UI-FF4B4B?style=for-the-badge&logo=streamlit&logoColor=white)](https://streamlit.io/)
+[![Groq](https://img.shields.io/badge/LLM_Groq_API-1A1A1A?style=for-the-badge)](https://groq.com/)
+[![Pytest](https://img.shields.io/badge/103_tests_passed-7B4FBF?style=for-the-badge&logo=pytest&logoColor=white)](#4-tests)
+[![License](https://img.shields.io/badge/License_MIT-FFB300?style=for-the-badge)](LICENSE)
 
-Agente de soporte virtual que lee la documentación de una tienda online
-ficticia (TiendaNova) y responde dudas sobre privacidad, devoluciones,
-envíos, métodos de pago, garantía y programa de afiliados, usando la API de
-**Groq** y una interfaz en **Streamlit**.
+Agente de consultas sobre un corpus de PDF cargable desde la propia interfaz. Selecciona
+qué documentos entran en el contexto con un ranking léxico TF-IDF —sin base vectorial— y
+resuelve los casos borde con un router determinista antes de llegar al modelo.
+
+La demo corre sobre la documentación de una tienda ficticia, pero funciona con cualquier
+corpus.
+
+[![Demo en vivo](https://img.shields.io/badge/▶_DEMO_EN_VIVO-2EA043?style=for-the-badge)](https://agente-tiendanova.streamlit.app/)
+
+</div>
+
+---
+
+<p align="center">Challenge AlurAgente — Oracle Next Education (ONE) x Alura Latam — G10</p>
 
 ## Cumplimiento del challenge
 
@@ -23,8 +35,6 @@ envíos, métodos de pago, garantía y programa de afiliados, usando la API de
 | Manejo de casos borde sin depender del LLM (saludos, offtopic, jailbreak, datos sensibles) vía router | ✅ |
 | Suite de tests automatizados (103 tests, pytest) | ✅ |
 | Deploy público con capturas | ✅ |
-
-<p align="center"><a href="https://agente-tiendanova.streamlit.app/"><strong>DEMO EN VIVO</strong></a></p>
 
 ## Cómo funciona
 
@@ -154,16 +164,15 @@ GROQ_API_KEY = "api_key"
 
 | App desplegada | Respondiendo una pregunta |
 | --- | --- |
-| ![Landing de la app](docs/screenshots/landing.png) | ![Respuesta sobre devoluciones](docs/screenshots/respuesta-devolucion.png) |
+| ![Landing de la app](docs/screenshots/agente-sin-pregunta.png) | ![Respuesta sobre devoluciones](docs/screenshots/agente-con-pregunta.png) |
 
-![Deploy en Streamlit Community Cloud a nombre del autor](docs/screenshots/deploy-streamlit-cloud.png)
+Sin documentación cargada el agente no responde. Y si se destilda la
+documentación de TiendaNova y se sube otro PDF, responde sobre ese corpus —
+acá, el reglamento interno de una empresa de logística:
 
-El agente no responde sin documentación cargada, y se adapta a cualquier
-documentación que subas:
-
-| Sin documentación cargada | Con documentación genérica |
+| Sin documentación cargada | Con otra documentación |
 | --- | --- |
-| ![Sin documentos, no responde](docs/screenshots/sin-documentos.png) | ![Respondiendo con otra documentación cargada](docs/screenshots/documentacion-generica.png) |
+| ![Sin documentos, no responde](docs/screenshots/agente-sin-documentacion.png) | ![Respondiendo sobre el reglamento de una empresa de logística](docs/screenshots/agente-diferente-documentacion.png) |
 
 ---
 
@@ -241,11 +250,9 @@ agente_tiendanova/
 ---
 
 ## 6. Algunas notas sueltas
-- La documentación está dividida en 6 documentos por tema en vez de un
-  único PDF, lo que permite citar la fuente correcta y facilita el
+- La documentación de la demo está dividida en 6 documentos por tema en vez
+  de un único PDF, lo que permite citar la fuente correcta y facilita el
   mantenimiento.
-- Se pueden agregar o reemplazar los PDFs desde la barra lateral, sin
-  tocar código.
 - La `GROQ_API_KEY` nunca queda en el repositorio: en local se define
   como variable de entorno, y en Streamlit Community Cloud se configura
   como secret desde el panel de la app.
