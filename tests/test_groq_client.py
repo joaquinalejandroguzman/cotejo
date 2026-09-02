@@ -1,3 +1,4 @@
+import logging
 import sys
 from pathlib import Path
 from unittest.mock import MagicMock, patch
@@ -52,12 +53,15 @@ class TestStripDocumentHedge:
 class TestChatSinApiKey:
     def test_chat_sin_api_key_lanza_error_claro(self):
         # Bug potencial: sin GROQ_API_KEY configurada, la app no deberia
-        # tirar un traceback feo sino un mensaje claro para el usuario.
+        # tirar un traceback feo. El usuario ve que el asistente no esta
+        # disponible; el detalle de que falta la key va al log, porque es
+        # quien mantiene el sistema el que tiene que actuar.
         try:
             chat([{"role": "user", "content": "hola"}], api_key=None)
             raise AssertionError("deberia haber lanzado GroqError")
         except GroqError as e:
-            assert "API key" in str(e)
+            assert "GROQ_API_KEY" in e.detalle_tecnico
+            assert "no está disponible" in str(e)
 
 
 class TestChatModeloDadoDeBaja:
@@ -78,8 +82,8 @@ class TestChatModeloDadoDeBaja:
                 )
                 raise AssertionError("deberia haber lanzado GroqError")
             except GroqError as e:
-                assert "modelo-inexistente" in str(e)
-                assert "ya no está disponible" in str(e)
+                assert "modelo-inexistente" in e.detalle_tecnico
+                assert "ya no está disponible" in e.detalle_tecnico
 
     def test_el_modelo_por_defecto_no_es_ninguno_de_los_que_groq_apago(self):
         # Groq da de baja modelos con fecha fija. Cada vez que se apago uno
@@ -91,6 +95,71 @@ class TestChatModeloDadoDeBaja:
             "llama-3.3-70b-versatile",  # fuera del plan gratuito 16/08/2026
         }
         assert resolve_model() not in retirados
+
+
+class TestDosAudiencias:
+    """Un error de Groq le habla a dos personas distintas.
+
+    El empleado que esta usando el asistente necesita saber que hacer
+    mientras tanto, en castellano y sin jerga. Quien mantiene el sistema
+    necesita el diagnostico. Mezclar las dos cosas en un solo mensaje deja
+    al usuario leyendo nombres de variables de entorno, y al que mantiene
+    el sistema sin enterarse de nada, porque no esta mirando esa pantalla.
+    """
+
+    # Terminos internos que jamas tienen que llegar a la pantalla del usuario.
+    JERGA = (
+        "GROQ_MODEL",
+        "groq_client.py",
+        "código",
+        "secret",
+        "variable de entorno",
+        "404",
+    )
+
+    def _lanzar_404(self):
+        mock_resp = MagicMock()
+        mock_resp.status_code = 404
+        mock_resp.raise_for_status.side_effect = requests.exceptions.HTTPError("404")
+        with patch("groq_client.requests.post", return_value=mock_resp):
+            try:
+                chat([{"role": "user", "content": "hola"}], model="x", api_key="k")
+            except GroqError as e:
+                return e
+        raise AssertionError("deberia haber lanzado GroqError")
+
+    def test_el_mensaje_al_usuario_no_tiene_jerga_tecnica(self):
+        mensaje = str(self._lanzar_404())
+        for termino in self.JERGA:
+            assert termino not in mensaje, f"'{termino}' no deberia llegar al usuario"
+
+    def test_el_mensaje_al_usuario_explica_que_hacer(self):
+        mensaje = str(self._lanzar_404()).lower()
+        assert "disponible" in mensaje
+        assert "soporte" in mensaje
+
+    def test_el_detalle_tecnico_si_dice_como_arreglarlo(self):
+        detalle = self._lanzar_404().detalle_tecnico
+        assert "GROQ_MODEL" in detalle
+        assert "console.groq.com" in detalle
+
+    def test_el_detalle_tecnico_queda_en_el_log(self, caplog):
+        # Si no se loguea, el unico que se entera de que el sistema se cayo
+        # es el cliente — y se entera llamando por telefono.
+        with caplog.at_level(logging.ERROR, logger="groq_client"):
+            self._lanzar_404()
+        assert any("GROQ_MODEL" in r.message for r in caplog.records)
+
+    def test_todos_los_errores_traen_las_dos_audiencias(self):
+        # Ningun camino de error puede quedar sin su version para el usuario
+        # y su version para el log.
+        e = GroqError("algo salio mal", "detalle para el log")
+        assert str(e) == "algo salio mal"
+        assert e.detalle_tecnico == "detalle para el log"
+
+    def test_sin_detalle_explicito_el_detalle_es_el_mensaje(self):
+        e = GroqError("un solo mensaje")
+        assert e.detalle_tecnico == "un solo mensaje"
 
 
 class TestResolveModel:
@@ -147,4 +216,8 @@ class TestChatRespuestaMalformada:
                 chat([{"role": "user", "content": "hola"}], api_key="fake-key")
                 raise AssertionError("deberia haber lanzado GroqError")
             except GroqError as e:
-                assert "formato inesperado" in str(e)
+                assert "formato inesperado" in e.detalle_tecnico
+                # La respuesta cruda va al log: sin eso no hay forma de saber
+                # si fue un filtro de contenido o un cambio en la API.
+                assert "choices" in e.detalle_tecnico
+                assert "no está disponible" in str(e)
