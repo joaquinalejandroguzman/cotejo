@@ -1,2 +1,9 @@
--r requirements.txt
-pytest>=8.0
+# Development dependencies.
+#
+# pyproject.toml is the single source of truth; this file installs the project
+# in editable mode with its `dev` extra so `pip install -r requirements-dev.txt`
+# keeps working for anyone who expects it.
+#
+# requirements.txt is kept separately because Streamlit Community Cloud reads
+# that file to build the deployed environment.
+-e .[dev]

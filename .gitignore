@@ -4,4 +4,25 @@ __pycache__/
 venv/
 .DS_Store
 .streamlit/secrets.toml
+
+# Test, lint and type-check caches
 .pytest_cache/
+.ruff_cache/
+.mypy_cache/
+
+# Coverage reports
+.coverage
+coverage.xml
+htmlcov/
+
+# Playwright artifacts
+test-results/
+playwright-report/
+
+# Packaging artifacts
+*.egg-info/
+build/
+dist/
+
+# Local tooling artifacts
+.atl/
