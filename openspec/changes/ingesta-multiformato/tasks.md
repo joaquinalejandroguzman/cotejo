@@ -14,12 +14,12 @@ donde se indica). CI corre en Python 3.12, 3.13 y 3.14.
 | Chained PRs recommended | Yes |
 | Suggested split | PR 1 → PR 2 → PR 3 → PR 4 → PR 5 |
 | Delivery strategy | ask-on-risk |
-| Chain strategy | feature-branch-chain |
+| Chain strategy | secuencial contra main (confirmado por el usuario el 2026-09-02) |
 
 ```text
 Decision needed before apply: No
 Chained PRs recommended: Yes
-Chain strategy: feature-branch-chain
+Chain strategy: secuencial contra main
 400-line budget risk: High
 ```
 
