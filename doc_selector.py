@@ -15,9 +15,15 @@ Un efecto util del IDF: las palabras que aparecen en todos los documentos
 ("tiendanova", "politica", "alcance", "proposito") quedan con peso cero
 solas, sin necesidad de mantenerlas en una lista de exclusion.
 """
+
 import math
 import re
 import unicodedata
+
+from pdf_utils import Document
+
+# Un documento puntuado: (nombre, texto, score de relevancia).
+ScoredDocument = tuple[str, str, float]
 
 # ~3.500 tokens de documentos. Deja lugar para el system prompt (~700
 # tokens), el historial recortado y la respuesta, sin pasarse del limite de
@@ -33,20 +39,124 @@ _TITLE_WEIGHT = 3.0
 # hago para saber cuanto tarda?" puntuaban por "como" y "hago", que no dicen
 # nada del tema.
 _STOPWORDS = {
-    "algo", "alguna", "algunas", "alguno", "algunos", "ante", "antes", "aqui",
-    "cada", "como", "con", "contra", "cual", "cuales", "cuando", "cuanta",
-    "cuantas", "cuanto", "cuantos", "dan", "das", "debe", "deben", "decir",
-    "dejar", "del", "demas", "desde", "donde", "dos", "ella", "ellas", "ello",
-    "ellos", "entre", "esa", "esas", "ese", "eso", "esos", "esta", "estan",
-    "estar", "estas", "este", "esto", "estos", "estoy", "hace", "hacen",
-    "hacer", "hago", "hasta", "hay", "las", "les", "los", "mas", "mia", "mio",
-    "mis", "misma", "mismo", "mucha", "mucho", "muy", "nada", "necesito",
-    "ninguna", "ninguno", "nos", "nosotros", "otra", "otras", "otro", "otros",
-    "para", "pero", "poco", "podes", "podria", "por", "porque", "puede",
-    "pueden", "puedo", "que", "quien", "quienes", "quiero", "saber", "ser",
-    "sera", "sino", "sobre", "solo", "son", "soy", "sus", "tambien", "tener",
-    "tengo", "tiene", "tienen", "tienes", "toda", "todas", "todo", "todos",
-    "tus", "una", "unas", "uno", "unos", "usted", "ustedes", "vos", "ver",
+    "algo",
+    "alguna",
+    "algunas",
+    "alguno",
+    "algunos",
+    "ante",
+    "antes",
+    "aqui",
+    "cada",
+    "como",
+    "con",
+    "contra",
+    "cual",
+    "cuales",
+    "cuando",
+    "cuanta",
+    "cuantas",
+    "cuanto",
+    "cuantos",
+    "dan",
+    "das",
+    "debe",
+    "deben",
+    "decir",
+    "dejar",
+    "del",
+    "demas",
+    "desde",
+    "donde",
+    "dos",
+    "ella",
+    "ellas",
+    "ello",
+    "ellos",
+    "entre",
+    "esa",
+    "esas",
+    "ese",
+    "eso",
+    "esos",
+    "esta",
+    "estan",
+    "estar",
+    "estas",
+    "este",
+    "esto",
+    "estos",
+    "estoy",
+    "hace",
+    "hacen",
+    "hacer",
+    "hago",
+    "hasta",
+    "hay",
+    "las",
+    "les",
+    "los",
+    "mas",
+    "mia",
+    "mio",
+    "mis",
+    "misma",
+    "mismo",
+    "mucha",
+    "mucho",
+    "muy",
+    "nada",
+    "necesito",
+    "ninguna",
+    "ninguno",
+    "nos",
+    "nosotros",
+    "otra",
+    "otras",
+    "otro",
+    "otros",
+    "para",
+    "pero",
+    "poco",
+    "podes",
+    "podria",
+    "por",
+    "porque",
+    "puede",
+    "pueden",
+    "puedo",
+    "que",
+    "quien",
+    "quienes",
+    "quiero",
+    "saber",
+    "ser",
+    "sera",
+    "sino",
+    "sobre",
+    "solo",
+    "son",
+    "soy",
+    "sus",
+    "tambien",
+    "tener",
+    "tengo",
+    "tiene",
+    "tienen",
+    "tienes",
+    "toda",
+    "todas",
+    "todo",
+    "todos",
+    "tus",
+    "una",
+    "unas",
+    "uno",
+    "unos",
+    "usted",
+    "ustedes",
+    "vos",
+    "ver",
 }
 
 _WORD = re.compile(r"[a-z0-9]+")
@@ -78,27 +188,30 @@ def _stem(word: str) -> str:
     return word[:_STEM_LEN]
 
 
-def _tokens(text: str) -> list:
+def _tokens(text: str) -> list[str]:
     """Raices de las palabras de 3 letras o mas que no sean vacias.
 
     El minimo es 3 y no 4 para no perder terminos cortos con carga real
     ("iva", "cvv", "dni").
     """
     return [
-        _stem(w)
-        for w in _WORD.findall(_normalize(text))
-        if len(w) >= 3 and w not in _STOPWORDS
+        _stem(w) for w in _WORD.findall(_normalize(text)) if len(w) >= 3 and w not in _STOPWORDS
     ]
 
 
-def _term_counts(tokens: list) -> dict:
-    counts = {}
+def _term_counts(tokens: list[str]) -> dict[str, int]:
+    counts: dict[str, int] = {}
     for t in tokens:
         counts[t] = counts.get(t, 0) + 1
     return counts
 
 
-def _score(query_terms: set, cuerpo: dict, titulo: set, idf: dict) -> float:
+def _score(
+    query_terms: set[str],
+    cuerpo: dict[str, int],
+    titulo: set[str],
+    idf: dict[str, float],
+) -> float:
     total = 0.0
     for termino in query_terms:
         peso = idf.get(termino, 0.0)
@@ -114,7 +227,7 @@ def _score(query_terms: set, cuerpo: dict, titulo: set, idf: dict) -> float:
     return total
 
 
-def rank_documents(question: str, docs: list) -> list:
+def rank_documents(question: str, docs: list[Document]) -> list[ScoredDocument]:
     """Ordena los documentos por relevancia contra la pregunta.
 
     docs: lista de tuplas (nombre, texto)
@@ -131,8 +244,8 @@ def rank_documents(question: str, docs: list) -> list:
     # cuerpo), no sobre un corpus fijo: si el usuario sube sus propios PDFs,
     # los pesos se recalculan para ese set.
     n_docs = len(docs)
-    document_freq = {}
-    for cuerpo, titulo in zip(cuerpos, titulos):
+    document_freq: dict[str, int] = {}
+    for cuerpo, titulo in zip(cuerpos, titulos, strict=False):
         for termino in set(cuerpo) | titulo:
             document_freq[termino] = document_freq.get(termino, 0) + 1
     # IDF suavizado: log(1 + N/df) en vez de log(N/df). Con la formula sin
@@ -153,7 +266,9 @@ def rank_documents(question: str, docs: list) -> list:
     return sorted(puntuados, key=lambda x: x[2], reverse=True)
 
 
-def select_relevant_docs(question: str, docs: list, max_chars: int = MAX_CONTEXT_CHARS) -> list:
+def select_relevant_docs(
+    question: str, docs: list[Document], max_chars: int = MAX_CONTEXT_CHARS
+) -> list[Document]:
     """Devuelve los documentos mas relevantes que entren en max_chars.
 
     docs: lista de tuplas (nombre, texto)
@@ -171,9 +286,9 @@ def select_relevant_docs(question: str, docs: list, max_chars: int = MAX_CONTEXT
     if total <= max_chars:
         return list(docs)
 
-    seleccionados = []
+    seleccionados: list[Document] = []
     usados = 0
-    for nombre, texto, score in rank_documents(question, docs):
+    for nombre, texto, _score in rank_documents(question, docs):
         if not seleccionados:
             # El documento mas relevante entra siempre, aunque haya que
             # recortarlo: devolver la lista vacia dejaria al agente sin fuente.
