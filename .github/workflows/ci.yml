@@ -33,17 +33,19 @@ jobs:
           python -m pip install --upgrade pip
           pip install -e ".[dev]"
 
+      # Se invocan los mismos targets del Makefile que se usan en local, para
+      # que los comandos no puedan divergir entre una maquina y el CI.
       - name: Lint
-        run: ruff check app.py router.py doc_selector.py groq_client.py pdf_utils.py tests
+        run: make lint
 
       - name: Check formatting
-        run: ruff format --check app.py router.py doc_selector.py groq_client.py pdf_utils.py tests
+        run: make format-check
 
       - name: Type check
-        run: mypy app.py router.py doc_selector.py groq_client.py pdf_utils.py
+        run: make typecheck
 
       - name: Unit tests with coverage
-        run: pytest --cov --cov-report=term-missing --cov-report=xml
+        run: make test-cov
 
       - name: Upload coverage report
         if: matrix.python-version == '3.12'
@@ -74,7 +76,7 @@ jobs:
         run: playwright install --with-deps chromium
 
       - name: Run end-to-end tests
-        run: pytest -m e2e
+        run: make test-e2e
 
       - name: Upload failure artifacts
         if: failure()
