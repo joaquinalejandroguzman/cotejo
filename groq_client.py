@@ -1,5 +1,6 @@
 """Cliente minimo para hablar con la API de Groq (compatible con OpenAI)."""
 
+import logging
 import os
 import re
 
@@ -7,6 +8,8 @@ import requests
 
 # Un mensaje del formato de chat completions: {"role": ..., "content": ...}.
 type ChatMessage = dict[str, str]
+
+logger = logging.getLogger(__name__)
 
 API_URL = "https://api.groq.com/openai/v1/chat/completions"
 
@@ -46,7 +49,47 @@ def resolve_model(override: str | None = None) -> str:
 
 
 class GroqError(Exception):
-    pass
+    """Un fallo hablando con Groq, con un mensaje para cada audiencia.
+
+    `str(error)` es lo que se le muestra al usuario final: alguien que esta
+    trabajando y necesita saber que hacer ahora, no diagnosticar el sistema.
+    Va sin jerga, sin nombres de variables y sin codigos de estado.
+
+    `error.detalle_tecnico` es lo que necesita quien mantiene el sistema, y
+    va al log. Ahi si aparecen el modelo, el codigo de estado y el paso
+    concreto para arreglarlo.
+
+    Estaban mezclados en un solo mensaje: el usuario terminaba leyendo
+    instrucciones para editar variables de entorno, y quien mantenia el
+    sistema no se enteraba de nada porque no estaba mirando esa pantalla.
+    """
+
+    def __init__(self, mensaje_usuario: str, detalle_tecnico: str | None = None) -> None:
+        super().__init__(mensaje_usuario)
+        self.detalle_tecnico = detalle_tecnico or mensaje_usuario
+
+
+def _fallar(mensaje_usuario: str, detalle_tecnico: str | None = None) -> GroqError:
+    """Deja el detalle tecnico en el log y devuelve el error para el usuario.
+
+    Se llama en cada camino de error para que ningun fallo pueda quedar sin
+    rastro: si no se loguea, el unico que se entera de que el sistema dejo de
+    funcionar es el cliente, y se entera llamando por telefono.
+    """
+    error = GroqError(mensaje_usuario, detalle_tecnico)
+    logger.error(error.detalle_tecnico)
+    return error
+
+
+# Lo que ve el usuario cuando el asistente no puede responder por un problema
+# del sistema. Deliberadamente vago sobre la causa: quien lo lee no puede
+# hacer nada con el detalle, y ver jerga tecnica en pantalla solo transmite
+# que el sistema esta abandonado.
+_MENSAJE_CAIDO = (
+    "El asistente no está disponible en este momento. El problema quedó "
+    "registrado automáticamente para el equipo técnico. Si tu consulta no "
+    "puede esperar, escribile a soporte."
+)
 
 
 # El modelo no siempre evita la muletilla "segun el documento" solo con
@@ -80,9 +123,10 @@ def chat(
     """
     model = resolve_model(model)
     if not api_key:
-        raise GroqError(
-            "Falta la API key de Groq. Configurala como GROQ_API_KEY en "
-            "los secrets de la app (o como variable de entorno en local)."
+        raise _fallar(
+            _MENSAJE_CAIDO,
+            "Falta la API key de Groq. Configurala como GROQ_API_KEY en los "
+            "secrets de la app (o como variable de entorno en local).",
         )
     headers = {
         "Authorization": f"Bearer {api_key}",
@@ -99,38 +143,66 @@ def chat(
         resp = requests.post(API_URL, headers=headers, json=payload, timeout=timeout)
         resp.raise_for_status()
     except requests.exceptions.Timeout as exc:
-        raise GroqError(f"Groq tardó más de {timeout}s en responder. Probá de nuevo.") from exc
+        # Estos dos son transitorios y se resuelven solos, asi que al usuario
+        # se le dice la verdad util: volve a intentar.
+        raise _fallar(
+            "El asistente tardó demasiado en responder. Probá de nuevo.",
+            f"Timeout de {timeout}s hablando con Groq (modelo '{model}').",
+        ) from exc
     except requests.exceptions.ConnectionError as exc:
-        raise GroqError(
-            "No se pudo conectar con la API de Groq. Revisá tu conexión a internet."
+        raise _fallar(
+            "No se pudo contactar al asistente. Revisá tu conexión e intentá de nuevo.",
+            "No se pudo conectar con la API de Groq. Puede ser la red local o "
+            "una caída del proveedor: https://groqstatus.com",
         ) from exc
     except requests.exceptions.HTTPError as exc:
         if resp.status_code == 401:
-            raise GroqError("La API key de Groq es inválida o no está configurada.") from exc
+            raise _fallar(
+                _MENSAJE_CAIDO,
+                "Groq rechazó la API key (401). Está vencida, revocada o mal "
+                "cargada: generá una nueva en https://console.groq.com/keys y "
+                "actualizá el secret GROQ_API_KEY.",
+            ) from exc
         if resp.status_code == 404:
-            # Caso real: Groq apago el modelo que teniamos configurado y el
-            # mensaje generico ("404 Client Error") no dejaba ver la causa.
-            raise GroqError(
+            # Caso real, dos veces: Groq apago el modelo que teniamos
+            # configurado y la app quedo caida. El usuario no puede hacer nada
+            # con esa informacion; quien mantiene el sistema, todo.
+            raise _fallar(
+                _MENSAJE_CAIDO,
                 f"El modelo '{model}' ya no está disponible en Groq (404). "
-                "Seguramente fue dado de baja: mirá los modelos vigentes en "
+                "Groq da de baja modelos con fecha fija. Mirá los vigentes en "
                 "https://console.groq.com/docs/models y cargá uno nuevo en la "
-                f"variable {MODEL_ENV_VAR} (como secret en Streamlit Cloud, o "
-                "como variable de entorno en local). No hace falta tocar el código."
+                f"variable {MODEL_ENV_VAR} (secret en Streamlit Cloud, o "
+                "variable de entorno en local). No hace falta tocar el código.",
             ) from exc
         if resp.status_code == 429:
-            raise GroqError(
-                "Se alcanzó el límite de uso gratuito de Groq. Probá de nuevo en un momento."
+            # Transitorio: se recupera solo cuando pasa el minuto.
+            raise _fallar(
+                "El asistente está recibiendo muchas consultas en este momento. "
+                "Esperá un minuto y volvé a preguntar.",
+                f"Groq devolvió 429 con el modelo '{model}': se agotó la cuota "
+                "de tokens por minuto del plan gratuito.",
             ) from exc
         if resp.status_code == 413:
-            raise GroqError(
-                "La conversación quedó demasiado grande para el plan gratuito de Groq. "
-                "Iniciá un chat nuevo para liberar contexto."
+            # El usuario si puede resolverlo, asi que se le dice como.
+            raise _fallar(
+                "La conversación se hizo muy larga. Empezá un chat nuevo para seguir.",
+                f"Groq devolvió 413 con el modelo '{model}': el historial más "
+                "los documentos superaron el límite de contexto.",
             ) from exc
-        raise GroqError(f"Groq respondió con error: {exc}") from exc
+        raise _fallar(
+            _MENSAJE_CAIDO,
+            f"Groq respondió con un error inesperado usando el modelo '{model}': {exc}",
+        ) from exc
 
     data = resp.json()
     try:
         contenido = data["choices"][0]["message"]["content"].strip()
     except (KeyError, IndexError) as exc:
-        raise GroqError("Groq devolvió una respuesta con un formato inesperado.") from exc
+        raise _fallar(
+            _MENSAJE_CAIDO,
+            f"Groq devolvió una respuesta con un formato inesperado usando el "
+            f"modelo '{model}'. Puede ser un filtro de contenido o un cambio en "
+            f"el formato de la API. Respuesta cruda: {str(data)[:400]}",
+        ) from exc
     return _strip_document_hedge(contenido)
