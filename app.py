@@ -17,7 +17,7 @@ from pathlib import Path
 import streamlit as st
 
 from doc_selector import select_relevant_docs
-from groq_client import DEFAULT_MODEL, GroqError, chat
+from groq_client import GroqError, chat, resolve_model
 from pdf_utils import (
     Document,
     PdfSource,
@@ -31,7 +31,7 @@ BASE_DIR = Path(__file__).parent
 DOCS_DIR = BASE_DIR / "documentos"
 LOGO_PATH = BASE_DIR / "assets" / "logo.png"
 FAVICON_PATH = BASE_DIR / "assets" / "favicon.png"
-GROQ_MODEL = DEFAULT_MODEL
+GROQ_MODEL = resolve_model()
 
 # Cuantos mensajes del historial se le mandan al modelo. El chat completo
 # viaja en cada request, asi que una conversacion larga se comia la cuota de

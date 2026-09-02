@@ -5,8 +5,8 @@ context: |
   groq_client.py, pdf_utils.py; no package/src layout). Groq REST API +
   pypdf + requests. Deployed on Streamlit Community Cloud. No Docker/CI/
   linter/type-checker/formatter. Product surface (UI, LLM prompt, router
-  replies, PDFs) is Spanish; code/tests/docs stay English. DEFAULT_MODEL
-  llama-3.3-70b-versatile is deprecated/Enterprise-tier (production broken).
+  replies, PDFs) is Spanish; code/tests/docs stay English. The Groq model is resolved from the
+  GROQ_MODEL environment variable, falling back to openai/gpt-oss-120b.
 
 strict_tdd: true
 
@@ -37,8 +37,8 @@ rules:
   proposal:
     - Code, comments, tests, docs, and specs are English; Streamlit UI copy,
       LLM system prompt, router canned responses, and PDF corpus stay Spanish
-    - Flag any change touching DEFAULT_MODEL or Groq model selection as
-      production-impacting (current model is deprecated/Enterprise pricing)
+    - Flag any change touching Groq model selection as production-impacting;
+      Groq retires models on fixed dates and has broken this app twice
     - Include rollback plan for risky changes
   specs:
     - Use Given/When/Then for scenarios

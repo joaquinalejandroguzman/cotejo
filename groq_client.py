@@ -1,5 +1,6 @@
 """Cliente minimo para hablar con la API de Groq (compatible con OpenAI)."""
 
+import os
 import re
 
 import requests
@@ -9,12 +10,39 @@ type ChatMessage = dict[str, str]
 
 API_URL = "https://api.groq.com/openai/v1/chat/completions"
 
-# Groq da de baja modelos con fecha fija y, una vez apagados, el endpoint
-# responde 404. El modelo anterior (meta-llama/llama-4-scout-17b-16e-instruct)
-# se apago el 17/07/2026 y la app quedo caida hasta que se cambio este valor.
-# Antes de tocarlo, verificar la fecha de baja en
-# https://console.groq.com/docs/deprecations
-DEFAULT_MODEL = "llama-3.3-70b-versatile"
+# Variable de entorno que permite cambiar el modelo sin tocar el codigo.
+# En Streamlit Community Cloud se carga como secret; en local, exportandola.
+MODEL_ENV_VAR = "GROQ_MODEL"
+
+# Modelo que se usa si nadie configura MODEL_ENV_VAR.
+#
+# Groq da de baja modelos con fecha fija y este proyecto ya se cayo dos veces
+# por eso: meta-llama/llama-4-scout-17b-16e-instruct se apago el 17/07/2026, y
+# llama-3.3-70b-versatile salio del plan gratuito el 16/08/2026. Por eso el
+# modelo ahora se resuelve por entorno: cuando Groq de de baja el proximo,
+# alcanza con cambiar un secret y reiniciar, sin editar codigo ni redeployar.
+#
+# Verificado el 01/09/2026 contra la API: responde correctamente sobre la
+# documentacion del proyecto en ~0.9s. Antes de cambiarlo, mirar las fechas
+# de baja en https://console.groq.com/docs/deprecations
+FALLBACK_MODEL = "openai/gpt-oss-120b"
+
+
+def resolve_model(override: str | None = None) -> str:
+    """Decide que modelo usar, en orden de prioridad.
+
+    1. El argumento explicito, si se pasa uno.
+    2. La variable de entorno MODEL_ENV_VAR.
+    3. FALLBACK_MODEL.
+
+    Un valor vacio o solo espacios se ignora: un secret cargado sin valor no
+    tiene que mandar un modelo vacio a la API, es preferible caer al que
+    sabemos que funciona.
+    """
+    for candidato in (override, os.environ.get(MODEL_ENV_VAR)):
+        if candidato and candidato.strip():
+            return candidato.strip()
+    return FALLBACK_MODEL
 
 
 class GroqError(Exception):
@@ -40,7 +68,7 @@ def _strip_document_hedge(text: str) -> str:
 
 def chat(
     messages: list[ChatMessage],
-    model: str = DEFAULT_MODEL,
+    model: str | None = None,
     api_key: str | None = None,
     timeout: int = 60,
 ) -> str:
@@ -48,7 +76,9 @@ def chat(
     y devuelve la respuesta del modelo.
 
     messages: lista de dicts {"role": "system"|"user"|"assistant", "content": str}
+    model: si no se pasa, lo resuelve resolve_model() (entorno o por defecto).
     """
+    model = resolve_model(model)
     if not api_key:
         raise GroqError(
             "Falta la API key de Groq. Configurala como GROQ_API_KEY en "
@@ -82,9 +112,10 @@ def chat(
             # mensaje generico ("404 Client Error") no dejaba ver la causa.
             raise GroqError(
                 f"El modelo '{model}' ya no está disponible en Groq (404). "
-                "Seguramente fue dado de baja: revisá "
-                "https://console.groq.com/docs/deprecations y actualizá "
-                "DEFAULT_MODEL en groq_client.py."
+                "Seguramente fue dado de baja: mirá los modelos vigentes en "
+                "https://console.groq.com/docs/models y cargá uno nuevo en la "
+                f"variable {MODEL_ENV_VAR} (como secret en Streamlit Cloud, o "
+                "como variable de entorno en local). No hace falta tocar el código."
             ) from exc
         if resp.status_code == 429:
             raise GroqError(

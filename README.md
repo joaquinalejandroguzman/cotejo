@@ -76,12 +76,18 @@ consultado (~2.500-3.500 tokens), junto con los últimos 6 mensajes de la
 conversación en vez del historial completo. Con eso entra cómodo en los
 límites del plan gratuito y quedan varias preguntas por minuto disponibles.
 
-> **Nota sobre el modelo:** Groq da de baja modelos con fecha fija y, una
-> vez apagados, la API responde `404`. El modelo original de este proyecto
-> (`meta-llama/llama-4-scout-17b-16e-instruct`) se apagó el **17/07/2026** y
-> dejó la app caída hasta que se actualizó. Si vuelve a aparecer un 404,
-> revisar [las deprecaciones de Groq](https://console.groq.com/docs/deprecations)
-> y actualizar `DEFAULT_MODEL` en `groq_client.py`.
+> **Nota sobre el modelo:** Groq da de baja modelos con fecha fija, y este
+> proyecto ya se cayó dos veces por eso:
+> `meta-llama/llama-4-scout-17b-16e-instruct` se apagó el **17/07/2026** y
+> `llama-3.3-70b-versatile` salió del plan gratuito el **16/08/2026**. En
+> ambos casos hubo que editar el código, commitear y redeployar para
+> revivir la app.
+>
+> Por eso el modelo ya no está escrito en el código: se resuelve con la
+> variable de entorno `GROQ_MODEL`, y `openai/gpt-oss-120b` queda solo como
+> valor por defecto. Cuando Groq dé de baja el próximo, alcanza con mirar
+> [los modelos vigentes](https://console.groq.com/docs/models), cargar uno
+> nuevo en esa variable y reiniciar. Sin tocar una línea.
 
 ## Stack
 

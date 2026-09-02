@@ -6,7 +6,14 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 import requests
 
-from groq_client import DEFAULT_MODEL, GroqError, _strip_document_hedge, chat
+from groq_client import (
+    FALLBACK_MODEL,
+    MODEL_ENV_VAR,
+    GroqError,
+    _strip_document_hedge,
+    chat,
+    resolve_model,
+)
 
 
 class TestStripDocumentHedge:
@@ -74,8 +81,57 @@ class TestChatModeloDadoDeBaja:
                 assert "modelo-inexistente" in str(e)
                 assert "ya no está disponible" in str(e)
 
-    def test_el_modelo_por_defecto_no_es_el_que_groq_apago(self):
-        assert DEFAULT_MODEL != "meta-llama/llama-4-scout-17b-16e-instruct"
+    def test_el_modelo_por_defecto_no_es_ninguno_de_los_que_groq_apago(self):
+        # Groq da de baja modelos con fecha fija. Cada vez que se apago uno
+        # que teniamos configurado, la app quedo caida en produccion. La
+        # lista crece: hay que dejar constancia de todos, no solo del ultimo.
+        retirados = {
+            "meta-llama/llama-4-scout-17b-16e-instruct",  # apagado 17/07/2026
+            "llama-3.1-8b-instant",  # apagado 16/08/2026
+            "llama-3.3-70b-versatile",  # fuera del plan gratuito 16/08/2026
+        }
+        assert resolve_model() not in retirados
+
+
+class TestResolveModel:
+    """El modelo tiene que poder cambiarse sin tocar el codigo.
+
+    Bug real, dos veces: el modelo estaba escrito a mano en el codigo, Groq
+    lo dio de baja y la unica forma de revivir la app fue editar el archivo,
+    commitear y redeployar. Con una variable de entorno alcanza con cambiar
+    un secret en el panel de Streamlit Cloud y reiniciar.
+    """
+
+    def test_sin_variable_de_entorno_usa_el_modelo_por_defecto(self, monkeypatch):
+        monkeypatch.delenv(MODEL_ENV_VAR, raising=False)
+        assert resolve_model() == FALLBACK_MODEL
+
+    def test_la_variable_de_entorno_tiene_prioridad(self, monkeypatch):
+        monkeypatch.setenv(MODEL_ENV_VAR, "openai/gpt-oss-20b")
+        assert resolve_model() == "openai/gpt-oss-20b"
+
+    def test_el_argumento_explicito_le_gana_a_la_variable_de_entorno(self, monkeypatch):
+        monkeypatch.setenv(MODEL_ENV_VAR, "openai/gpt-oss-20b")
+        assert resolve_model("qwen/qwen3.8-27b") == "qwen/qwen3.8-27b"
+
+    def test_una_variable_vacia_no_pisa_el_modelo_por_defecto(self, monkeypatch):
+        # Un secret cargado sin valor no deberia mandar un modelo vacio a la
+        # API: es preferible caer al modelo por defecto, que sabemos que anda.
+        monkeypatch.setenv(MODEL_ENV_VAR, "   ")
+        assert resolve_model() == FALLBACK_MODEL
+
+    def test_se_le_sacan_los_espacios_sobrantes(self, monkeypatch):
+        monkeypatch.setenv(MODEL_ENV_VAR, "  openai/gpt-oss-20b  ")
+        assert resolve_model() == "openai/gpt-oss-20b"
+
+    def test_chat_sin_modelo_explicito_usa_el_resuelto(self, monkeypatch):
+        monkeypatch.setenv(MODEL_ENV_VAR, "modelo-de-prueba")
+        mock_resp = MagicMock()
+        mock_resp.json.return_value = {"choices": [{"message": {"content": "ok"}}]}
+        mock_resp.raise_for_status.return_value = None
+        with patch("groq_client.requests.post", return_value=mock_resp) as post:
+            chat([{"role": "user", "content": "hola"}], api_key="fake-key")
+        assert post.call_args.kwargs["json"]["model"] == "modelo-de-prueba"
 
 
 class TestChatRespuestaMalformada:
