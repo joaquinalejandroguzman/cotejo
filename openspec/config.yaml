@@ -1,0 +1,68 @@
+schema: spec-driven
+
+context: |
+  Python 3.14 flat-module Streamlit app (app.py, router.py, doc_selector.py,
+  groq_client.py, pdf_utils.py; no package/src layout). Groq REST API +
+  pypdf + requests. Deployed on Streamlit Community Cloud. No Docker/CI/
+  linter/type-checker/formatter. Product surface (UI, LLM prompt, router
+  replies, PDFs) is Spanish; code/tests/docs stay English. DEFAULT_MODEL
+  llama-3.3-70b-versatile is deprecated/Enterprise-tier (production broken).
+
+strict_tdd: true
+
+testing:
+  test_command: "make test"
+  framework: pytest
+  baseline: "103 unit tests passing; 2 end-to-end tests passing (verified 2026-09-01)"
+  venv: ".venv (Python 3.14.7); install with `make install`"
+  coverage: "pytest-cov — `make test-cov` (no threshold enforced yet)"
+  lint: "ruff — `make lint`"
+  formatter: "ruff format — `make format`, verified by `make format-check`"
+  type_checker: "mypy strict — `make typecheck`"
+  e2e: "pytest-playwright against a real Streamlit server — `make test-e2e`"
+  all_gates: "make check"
+  ci: ".github/workflows/ci.yml — gates on Python 3.12/3.13/3.14 plus an e2e job"
+
+# Quality debt measured against the untouched source on 2026-09-01. These are
+# the numbers the restructure has to drive to zero; do not silence the rules.
+quality_baseline:
+  lint_violations: 50          # 37 in source modules, 13 in tests
+  unformatted_files: 7         # of 9
+  type_errors: 29              # in 5 files, mypy strict
+  known_type_defects:
+    - "app.py:127 passes BytesIO to extract_text_from_pdf, annotated as path: str"
+    - "app.py:197 assigns None to company_name, inferred as str"
+
+rules:
+  proposal:
+    - Code, comments, tests, docs, and specs are English; Streamlit UI copy,
+      LLM system prompt, router canned responses, and PDF corpus stay Spanish
+    - Flag any change touching DEFAULT_MODEL or Groq model selection as
+      production-impacting (current model is deprecated/Enterprise pricing)
+    - Include rollback plan for risky changes
+  specs:
+    - Use Given/When/Then for scenarios
+    - Use RFC 2119 keywords (MUST, SHALL, SHOULD, MAY)
+    - Groq offers no embedding models (text generation, Whisper, Compound
+      only) — any RAG-with-embeddings design needs local embeddings
+      (fastembed / sentence-transformers) or a second provider
+  design:
+    - Document architecture decisions with rationale
+    - Note Streamlit Community Cloud deployment constraints where relevant
+  tasks:
+    - Group by phase, use hierarchical numbering
+    - Keep tasks completable in one session
+    - Respect the 400-changed-line review budget (delivery_strategy: ask-on-risk)
+  apply:
+    guidelines:
+      - Follow the existing flat-module layout (no package/src directory)
+      - Keep product-facing strings in Spanish; code/tests/comments in English
+      - Strict TDD is enabled — write a failing test before implementation code
+    tdd: true
+    test_command: ".venv/bin/python -m pytest"
+  verify:
+    test_command: ".venv/bin/python -m pytest"
+    build_command: ""
+    coverage_threshold: 0
+  archive:
+    - Warn before merging destructive deltas
