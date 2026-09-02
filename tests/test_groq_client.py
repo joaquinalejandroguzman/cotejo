@@ -1,12 +1,12 @@
 import sys
 from pathlib import Path
-from unittest.mock import patch, MagicMock
+from unittest.mock import MagicMock, patch
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 import requests
 
-from groq_client import _strip_document_hedge, chat, GroqError, DEFAULT_MODEL
+from groq_client import DEFAULT_MODEL, GroqError, _strip_document_hedge, chat
 
 
 class TestStripDocumentHedge:
@@ -48,7 +48,7 @@ class TestChatSinApiKey:
         # tirar un traceback feo sino un mensaje claro para el usuario.
         try:
             chat([{"role": "user", "content": "hola"}], api_key=None)
-            assert False, "deberia haber lanzado GroqError"
+            raise AssertionError("deberia haber lanzado GroqError")
         except GroqError as e:
             assert "API key" in str(e)
 
@@ -69,7 +69,7 @@ class TestChatModeloDadoDeBaja:
                     model="modelo-inexistente",
                     api_key="fake-key",
                 )
-                assert False, "deberia haber lanzado GroqError"
+                raise AssertionError("deberia haber lanzado GroqError")
             except GroqError as e:
                 assert "modelo-inexistente" in str(e)
                 assert "ya no está disponible" in str(e)
@@ -89,6 +89,6 @@ class TestChatRespuestaMalformada:
         with patch("groq_client.requests.post", return_value=mock_resp):
             try:
                 chat([{"role": "user", "content": "hola"}], api_key="fake-key")
-                assert False, "deberia haber lanzado GroqError"
+                raise AssertionError("deberia haber lanzado GroqError")
             except GroqError as e:
                 assert "formato inesperado" in str(e)

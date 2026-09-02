@@ -133,6 +133,9 @@ class TestSelectRelevantDocs:
         # Los PDFs que sube el usuario no estan en ninguna lista de palabras
         # clave: el puntaje sale del propio texto, asi que tienen que poder
         # ganarle a los documentos base.
-        docs = DOCS + [("Mi manual propio", "El tornillo métrico M8 se ajusta a 25 newton metro. " * 40)]
-        seleccion = select_relevant_docs("¿a cuánto ajusto el tornillo métrico?", docs, max_chars=600)
+        propio = "El tornillo métrico M8 se ajusta a 25 newton metro. " * 40
+        docs = [*DOCS, ("Mi manual propio", propio)]
+        seleccion = select_relevant_docs(
+            "¿a cuánto ajusto el tornillo métrico?", docs, max_chars=600
+        )
         assert seleccion[0][0] == "Mi manual propio"
