@@ -1,16 +1,26 @@
-# Quality gates for agente-tiendanova.
-# Every target runs through the project virtualenv so local runs and CI
-# execute the exact same commands.
+# Compuertas de calidad del proyecto.
+#
+# Estos mismos targets los invoca el CI, para que los comandos no puedan
+# divergir entre una maquina y el pipeline. Si el comando anda aca, anda alla.
+#
+# En local las herramientas se toman del virtualenv del proyecto. En CI, que
+# instala en el Python del runner y no crea un venv, se usan las del PATH.
 
 VENV    := .venv
-PY      := $(VENV)/bin/python
-PIP     := $(VENV)/bin/pip
-RUFF    := $(VENV)/bin/ruff
-MYPY    := $(VENV)/bin/mypy
+ifneq ($(wildcard $(VENV)/bin/python),)
+  BIN   := $(VENV)/bin/
+else
+  BIN   :=
+endif
+
+PY      := $(BIN)python
+PIP     := $(BIN)pip
+RUFF    := $(BIN)ruff
+MYPY    := $(BIN)mypy
 PYTEST  := $(PY) -m pytest
 
 SRC     := app.py router.py doc_selector.py groq_client.py pdf_utils.py
-PATHS   := $(SRC) tests
+PATHS   := $(SRC) scripts tests
 
 .DEFAULT_GOAL := help
 .PHONY: help venv install install-e2e run test test-cov test-e2e lint format format-check typecheck check clean
@@ -52,7 +62,7 @@ format-check: ## Fail if any file is not canonically formatted
 	$(RUFF) format --check $(PATHS)
 
 typecheck: ## Run static type checking
-	$(MYPY) $(SRC)
+	$(MYPY) $(SRC) scripts
 
 check: lint format-check typecheck test ## Run every gate CI runs
 

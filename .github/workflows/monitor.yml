@@ -1,0 +1,78 @@
+name: Monitor de disponibilidad
+
+# Groq da de baja modelos con fecha fija, y esta app ya se cayó dos veces por
+# eso. Las dos veces el aviso llegó cuando alguien intentó usarla.
+#
+# Este chequeo corre solo todos los días. Si algo anda mal, el workflow falla,
+# GitHub manda un mail y se abre un issue con el diagnóstico.
+
+on:
+  schedule:
+    # 12:00 UTC = 09:00 en Argentina. Temprano, para tener el día por delante.
+    - cron: "0 12 * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  issues: write
+
+jobs:
+  disponibilidad:
+    name: El modelo sigue vigente y responde
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+
+      - name: Instalar dependencias
+        run: |
+          python -m pip install --upgrade pip
+          pip install -e .
+
+      - name: Verificar el modelo en Groq
+        id: verificar
+        env:
+          GROQ_API_KEY: ${{ secrets.GROQ_API_KEY }}
+          GROQ_MODEL: ${{ vars.GROQ_MODEL }}
+        run: python scripts/verificar_disponibilidad.py 2>&1 | tee diagnostico.txt
+
+      - name: Verificar que la app desplegada responde
+        # Solo corre si está configurada la variable APP_URL del repositorio.
+        if: vars.APP_URL != ''
+        run: |
+          codigo=$(curl -s -o /dev/null -w "%{http_code}" --max-time 30 "${{ vars.APP_URL }}")
+          echo "La app respondió HTTP $codigo"
+          if [ "$codigo" != "200" ]; then
+            echo "::error::La app desplegada respondió HTTP $codigo en lugar de 200"
+            exit 1
+          fi
+
+      - name: Abrir un issue si algo falló
+        if: failure()
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          # Un solo issue abierto por vez: si ya hay uno, se comenta ahí en
+          # lugar de crear uno nuevo cada día hasta que alguien lo mire.
+          existente=$(gh issue list --label "disponibilidad" --state open \
+            --json number --jq '.[0].number // empty')
+
+          detalle=$(cat diagnostico.txt 2>/dev/null || echo "Sin diagnóstico disponible.")
+          cuerpo=$(printf '%s\n\n```\n%s\n```\n\n%s\n' \
+            "El chequeo diario de disponibilidad falló." \
+            "$detalle" \
+            "Ejecución: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}")
+
+          if [ -n "$existente" ]; then
+            gh issue comment "$existente" --body "$cuerpo"
+          else
+            gh issue create \
+              --title "El asistente no está disponible" \
+              --label "disponibilidad" \
+              --body "$cuerpo"
+          fi
