@@ -1,9 +1,10 @@
+import io
 import sys
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
-from pdf_utils import extract_text_from_pdf, truncate_for_context, combine_documents
+from pdf_utils import combine_documents, extract_text_from_pdf, truncate_for_context
 
 PDF_PATH = Path(__file__).resolve().parent.parent / "documentos" / "politica_devoluciones.pdf"
 
@@ -18,6 +19,20 @@ class TestExtractTextFromPdf:
         assert "TiendaNova" in texto
         assert "Devoluciones" in texto or "devoluciones" in texto.lower()
         assert "Reembolso" in texto or "reembolso" in texto.lower()
+
+    def test_acepta_un_path(self):
+        """Callers pass a Path, not only a string."""
+        assert extract_text_from_pdf(PDF_PATH) == extract_text_from_pdf(str(PDF_PATH))
+
+    def test_acepta_un_stream_de_bytes(self):
+        """Uploaded files arrive as bytes and are read through BytesIO.
+
+        The app wraps uploaded content in BytesIO rather than writing it to
+        disk, so a byte stream is a supported input and must extract exactly
+        the same text as reading the same document from a path.
+        """
+        stream = io.BytesIO(PDF_PATH.read_bytes())
+        assert extract_text_from_pdf(stream) == extract_text_from_pdf(str(PDF_PATH))
 
 
 class TestTruncateForContext:

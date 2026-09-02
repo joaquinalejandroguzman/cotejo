@@ -3,7 +3,7 @@ requires = ["setuptools>=68"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "agente-tiendanova"
+name = "sabia"
 version = "0.1.0"
 description = "Document-grounded support agent over a PDF corpus, with a deterministic pre-LLM router."
 readme = "README.md"
@@ -32,7 +32,7 @@ dev = [
 ]
 
 [project.urls]
-Repository = "https://github.com/joaquinalejandroguzman/agente-tiendanova"
+Repository = "https://github.com/joaquinalejandroguzman/sabia"
 
 # The project is still a flat set of top-level modules. Declaring them
 # explicitly keeps `pip install -e .` working today; this list is replaced by

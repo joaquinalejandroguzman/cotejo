@@ -1,6 +1,11 @@
 """Cliente minimo para hablar con la API de Groq (compatible con OpenAI)."""
+
 import re
+
 import requests
+
+# Un mensaje del formato de chat completions: {"role": ..., "content": ...}.
+type ChatMessage = dict[str, str]
 
 API_URL = "https://api.groq.com/openai/v1/chat/completions"
 
@@ -33,8 +38,14 @@ def _strip_document_hedge(text: str) -> str:
     return nuevo
 
 
-def chat(messages: list, model: str = DEFAULT_MODEL, api_key: str = None, timeout: int = 60) -> str:
-    """Envia una conversacion al endpoint de chat completions de Groq y devuelve la respuesta del modelo.
+def chat(
+    messages: list[ChatMessage],
+    model: str = DEFAULT_MODEL,
+    api_key: str | None = None,
+    timeout: int = 60,
+) -> str:
+    """Envia una conversacion al endpoint de chat completions de Groq
+    y devuelve la respuesta del modelo.
 
     messages: lista de dicts {"role": "system"|"user"|"assistant", "content": str}
     """
@@ -60,7 +71,9 @@ def chat(messages: list, model: str = DEFAULT_MODEL, api_key: str = None, timeou
     except requests.exceptions.Timeout as exc:
         raise GroqError(f"Groq tardó más de {timeout}s en responder. Probá de nuevo.") from exc
     except requests.exceptions.ConnectionError as exc:
-        raise GroqError("No se pudo conectar con la API de Groq. Revisá tu conexión a internet.") from exc
+        raise GroqError(
+            "No se pudo conectar con la API de Groq. Revisá tu conexión a internet."
+        ) from exc
     except requests.exceptions.HTTPError as exc:
         if resp.status_code == 401:
             raise GroqError("La API key de Groq es inválida o no está configurada.") from exc
@@ -74,7 +87,9 @@ def chat(messages: list, model: str = DEFAULT_MODEL, api_key: str = None, timeou
                 "DEFAULT_MODEL en groq_client.py."
             ) from exc
         if resp.status_code == 429:
-            raise GroqError("Se alcanzó el límite de uso gratuito de Groq. Probá de nuevo en un momento.") from exc
+            raise GroqError(
+                "Se alcanzó el límite de uso gratuito de Groq. Probá de nuevo en un momento."
+            ) from exc
         if resp.status_code == 413:
             raise GroqError(
                 "La conversación quedó demasiado grande para el plan gratuito de Groq. "

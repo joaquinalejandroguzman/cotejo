@@ -7,16 +7,27 @@ de un system prompt largo. Para los casos mas comunes y repetitivos
 deterministica en Python, sin depender de que el modelo razone bien.
 Solo las preguntas reales sobre el contenido del documento llegan al LLM.
 """
+
 import re
 import unicodedata
 
 # Patrones sin tildes: el texto se normaliza (tildes removidas) antes de
 # matchear, asi "qué" y "que", "documentación" y "documentacion" matchean igual.
 _SALUDOS = [
-    r"^hola\b", r"^buenas\b", r"^buen[oa]s? dias?\b", r"^buenas tardes\b",
-    r"^buenas noches\b", r"^hey\b", r"^que tal\b",
-    r"^como estas\b", r"^gracias\b", r"^muchas gracias\b",
-    r"^chau\b", r"^adios\b", r"^hasta luego\b", r"^ok gracias\b",
+    r"^hola\b",
+    r"^buenas\b",
+    r"^buen[oa]s? dias?\b",
+    r"^buenas tardes\b",
+    r"^buenas noches\b",
+    r"^hey\b",
+    r"^que tal\b",
+    r"^como estas\b",
+    r"^gracias\b",
+    r"^muchas gracias\b",
+    r"^chau\b",
+    r"^adios\b",
+    r"^hasta luego\b",
+    r"^ok gracias\b",
 ]
 
 # Continuaciones cortas de un saludo que siguen siendo solo cortesia (no una
@@ -24,8 +35,14 @@ _SALUDOS = [
 # para tratar "hola, hay envios?" como saludo puro y tragarse la pregunta.
 # Mejor listar explicitamente las formas de cortesia conocidas.
 _CORTESIA_CORTA = [
-    r"^como estas$", r"^como andas$", r"^como va$", r"^como vas$",
-    r"^como te va$", r"^todo bien$", r"^que tal$", r"^que contas$",
+    r"^como estas$",
+    r"^como andas$",
+    r"^como va$",
+    r"^como vas$",
+    r"^como te va$",
+    r"^todo bien$",
+    r"^que tal$",
+    r"^que contas$",
     r"^que haces$",
 ]
 
@@ -44,18 +61,33 @@ _META_DOCS = [
 # creativo): el modelo no siempre sigue la instruccion del prompt al pie
 # de la letra, mejor resolverlo aca.
 _OFFTOPIC = [
-    r"que dia es hoy", r"que dia es$", r"que fecha es", r"en que fecha estamos",
-    r"que hora es", r"que hora son",
-    r"que clima hace", r"como esta el clima", r"va a llover", r"el pronostico",
-    r"contame un chiste", r"decime un chiste", r"contame un poema",
-    r"escribime un poema", r"hazme un poema", r"escribime una cancion",
-    r"cuanto es \d", r"resolveme esta cuenta", r"cuanto suman",
-
+    r"que dia es hoy",
+    r"que dia es$",
+    r"que fecha es",
+    r"en que fecha estamos",
+    r"que hora es",
+    r"que hora son",
+    r"que clima hace",
+    r"como esta el clima",
+    r"va a llover",
+    r"el pronostico",
+    r"contame un chiste",
+    r"decime un chiste",
+    r"contame un poema",
+    r"escribime un poema",
+    r"hazme un poema",
+    r"escribime una cancion",
+    r"cuanto es \d",
+    r"resolveme esta cuenta",
+    r"cuanto suman",
     # Insistencia corta tras el rechazo (ver categoria H de jailbreak).
     # Bug real: "que hora es" -> rechazo -> "como que no" hacia alucinar
     # una respuesta sobre reembolsos, sin relacion con la pregunta.
-    r"^como que no\??!?$", r"^como asi que no\??!?$", r"^por que no\??!?$",
-    r"^en serio que no\??!?$", r"^y eso\??!?$",
+    r"^como que no\??!?$",
+    r"^como asi que no\??!?$",
+    r"^por que no\??!?$",
+    r"^en serio que no\??!?$",
+    r"^y eso\??!?$",
 ]
 
 # Datos de tarjeta: tema sensible con una sola respuesta correcta fija en
@@ -77,70 +109,118 @@ _DATOS_TARJETA = [
 # alcanza con un solo verbo conjugado.
 _JAILBREAK = [
     # --- A. Anular / ignorar las instrucciones ---
-    r"ignora tus (instrucciones|reglas)", r"ignora las (instrucciones|reglas)",
-    r"ignora lo anterior", r"ignora todo lo anterior",
-    r"olvida tus (instrucciones|reglas)", r"olvida las (instrucciones|reglas)",
-    r"olvida lo anterior", r"olvidate de (tus|las) (instrucciones|reglas)",
-    r"descarta (tus|las) (instrucciones|reglas)", r"no sigas (tus|las) (instrucciones|reglas)",
+    r"ignora tus (instrucciones|reglas)",
+    r"ignora las (instrucciones|reglas)",
+    r"ignora lo anterior",
+    r"ignora todo lo anterior",
+    r"olvida tus (instrucciones|reglas)",
+    r"olvida las (instrucciones|reglas)",
+    r"olvida lo anterior",
+    r"olvidate de (tus|las) (instrucciones|reglas)",
+    r"descarta (tus|las) (instrucciones|reglas)",
+    r"no sigas (tus|las) (instrucciones|reglas)",
     r"saltea(te)? (tus|las) (instrucciones|reglas)",
-
     # --- B. Cambio de rol / personaje sin restricciones ---
-    r"sin restricciones", r"sin filtros", r"sin censura", r"sin reglas",
-    r"no tienes reglas", r"no tenes reglas", r"modo desarrollador", r"developer mode",
-    r"modo admin", r"modo sin filtro", r"eres libre de", r"sos libre de",
-    r"actua como si no tuvieras", r"actua sin filtros", r"actua sin restricciones",
-    r"finge que no tienes", r"fingi que no tenes", r"pretende que no tienes",
-    r"pretendas que no tenes", r"imagina que no tenes reglas", r"en un mundo hipotetico.*sin reglas",
-
+    r"sin restricciones",
+    r"sin filtros",
+    r"sin censura",
+    r"sin reglas",
+    r"no tienes reglas",
+    r"no tenes reglas",
+    r"modo desarrollador",
+    r"developer mode",
+    r"modo admin",
+    r"modo sin filtro",
+    r"eres libre de",
+    r"sos libre de",
+    r"actua como si no tuvieras",
+    r"actua sin filtros",
+    r"actua sin restricciones",
+    r"finge que no tienes",
+    r"fingi que no tenes",
+    r"pretende que no tienes",
+    r"pretendas que no tenes",
+    r"imagina que no tenes reglas",
+    r"en un mundo hipotetico.*sin reglas",
     # --- C. Pedido directo del system prompt / instrucciones ---
     # "syst\w*"/"pr\w*mpt" toleran typos ("systm", "prmpt"). Cubre tambien
     # el orden invertido ("prompt system"), que antes hacia inventar la
     # arquitectura interna en vez de rechazar.
-    r"\bsyst\w*\s+pr\w*mpt\b", r"\bpr\w*mpt\s+syst\w*\b", r"system instructions",
-    r"cual es tu prompt", r"cual es tu configuracion",
-    r"cuales son tus instrucciones", r"que instrucciones tenes", r"que instrucciones tienes",
-    r"que reglas tenes", r"que reglas tienes", r"cuales son tus reglas",
+    r"\bsyst\w*\s+pr\w*mpt\b",
+    r"\bpr\w*mpt\s+syst\w*\b",
+    r"system instructions",
+    r"cual es tu prompt",
+    r"cual es tu configuracion",
+    r"cuales son tus instrucciones",
+    r"que instrucciones tenes",
+    r"que instrucciones tienes",
+    r"que reglas tenes",
+    r"que reglas tienes",
+    r"cuales son tus reglas",
     r"mostrame (tu prompt|tus instrucciones|el prompt|las instrucciones)",
     r"muestrame (tu prompt|tus instrucciones|el prompt|las instrucciones)",
-    r"revela (tu prompt|tus instrucciones)", r"revelame (tu prompt|tus instrucciones)",
-    r"repeti (tu prompt|tus instrucciones)", r"repite (tu prompt|tus instrucciones)",
-    r"imprimi tu prompt", r"imprime tu prompt", r"tu prompt inicial",
-    r"que te dijeron que hicieras", r"que instrucciones te dieron",
+    r"revela (tu prompt|tus instrucciones)",
+    r"revelame (tu prompt|tus instrucciones)",
+    r"repeti (tu prompt|tus instrucciones)",
+    r"repite (tu prompt|tus instrucciones)",
+    r"imprimi tu prompt",
+    r"imprime tu prompt",
+    r"tu prompt inicial",
+    r"que te dijeron que hicieras",
+    r"que instrucciones te dieron",
     # "dime"/"decime", "tenes que decir", "necesito que me digas": tres
     # formas de pedir lo mismo, con tolerancia a typos en "prompt"/"secreto".
-    r"dime tu pr\w*mpt", r"decime tu pr\w*mpt",
+    r"dime tu pr\w*mpt",
+    r"decime tu pr\w*mpt",
     r"(tenes|tienes) que decir(me)?.*(pr\w*mpt|secreto|instruccion)",
     r"(necesito|quiero) que me (digas|cuentes).*(pr\w*mpt|secreto|instruccion)",
-
     # --- D. Secretos / informacion oculta ---
-    r"cuentame un secreto", r"contame un secreto", r"dime un secreto",
-    r"decime un secreto", r"que secreto", r"informacion oculta",
-    r"que ocultas", r"que me estas ocultando",
-
+    r"cuentame un secreto",
+    r"contame un secreto",
+    r"dime un secreto",
+    r"decime un secreto",
+    r"que secreto",
+    r"informacion oculta",
+    r"que ocultas",
+    r"que me estas ocultando",
     # --- E. Extraccion indirecta (repetir/traducir/resumir instrucciones) ---
-    r"repeti todo lo que te dijeron", r"repite todo lo que te dijeron",
-    r"traduci tus instrucciones", r"traduce tus instrucciones",
-    r"resumime tus instrucciones", r"resume tus instrucciones",
-    r"completa esta frase.*mis instrucciones", r"empeza tu respuesta con.*mis instrucciones",
-
+    r"repeti todo lo que te dijeron",
+    r"repite todo lo que te dijeron",
+    r"traduci tus instrucciones",
+    r"traduce tus instrucciones",
+    r"resumime tus instrucciones",
+    r"resume tus instrucciones",
+    r"completa esta frase.*mis instrucciones",
+    r"empeza tu respuesta con.*mis instrucciones",
     # --- F. Afirmaciones de autoridad falsa ---
-    r"soy el desarrollador", r"soy tu desarrollador", r"soy el creador",
-    r"soy tu creador", r"soy( el| tu)? admin\b", r"soy administrador",
-    r"tengo permiso para ver", r"modo admin activado",
+    r"soy el desarrollador",
+    r"soy tu desarrollador",
+    r"soy el creador",
+    r"soy tu creador",
+    r"soy( el| tu)? admin\b",
+    r"soy administrador",
+    r"tengo permiso para ver",
+    r"modo admin activado",
     r"acceso de administrador",
-
     # --- G. Variantes en ingles (cobertura basica) ---
-    r"ignore previous instructions", r"ignore all previous instructions",
-    r"ignore your instructions", r"show me your (system )?prompt",
-    r"reveal your (system )?prompt", r"what is your (system )?prompt",
-    r"act as if you have no restrictions", r"pretend you have no rules",
+    r"ignore previous instructions",
+    r"ignore all previous instructions",
+    r"ignore your instructions",
+    r"show me your (system )?prompt",
+    r"reveal your (system )?prompt",
+    r"what is your (system )?prompt",
+    r"act as if you have no restrictions",
+    r"pretend you have no rules",
     r"you are now in dan mode",
-
     # --- H. Continuar insistiendo tras un rechazo ---
     # Bug real: tras rechazar un jailbreak, un "porque" solo hacia que el
     # modelo describiera su propio system prompt en vez de sostener el rechazo.
-    r"^porque\??$", r"^por que\??$", r"^dale\??!?$", r"^posta\??!?$",
-    r"^en serio\??!?$", r"^vamos\??!?$",
+    r"^porque\??$",
+    r"^por que\??$",
+    r"^dale\??!?$",
+    r"^posta\??!?$",
+    r"^en serio\??!?$",
+    r"^vamos\??!?$",
 ]
 
 
@@ -152,8 +232,7 @@ def _normalize(text: str) -> str:
     t = "".join(c for c in t if not unicodedata.combining(c))
     # Quita signos de apertura en español y espacios sobrantes, para que
     # los patrones anclados con ^ funcionen igual con o sin "¿"/"¡".
-    t = t.lstrip("¿¡ ")
-    return t
+    return t.lstrip("¿¡ ")
 
 
 def is_injection_attempt(text: str) -> bool:
@@ -161,7 +240,7 @@ def is_injection_attempt(text: str) -> bool:
     return any(re.search(p, t) for p in _JAILBREAK)
 
 
-def injection_response(company_name: str = None) -> str:
+def injection_response(company_name: str | None = None) -> str:
     rol = f"agente de soporte de {company_name}" if company_name else "agente de soporte virtual"
     return (
         f"No puedo compartir instrucciones internas, secretos ni salirme de mi "
@@ -180,10 +259,8 @@ def is_greeting(text: str) -> bool:
         # queda una pregunta real (ej: "hola, como compro?" es corto pero
         # es pregunta real, no un saludo puro). Solo se considera saludo
         # puro si no queda nada o si es una cortesia corta conocida.
-        resto = t[m.end():].strip(" ,.!?")
-        if resto == "" or any(re.match(p, resto) for p in _CORTESIA_CORTA):
-            return True
-        return False
+        resto = t[m.end() :].strip(" ,.!?")
+        return bool(resto == "" or any(re.match(p, resto) for p in _CORTESIA_CORTA))
     return False
 
 
@@ -202,12 +279,15 @@ def is_card_data_question(text: str) -> bool:
     return any(re.search(p, t) for p in _DATOS_TARJETA)
 
 
-def greeting_response(company_name: str = None) -> str:
+def greeting_response(company_name: str | None = None) -> str:
     con_empresa = f" con {company_name}" if company_name else ""
-    return f"¡Hola! ¿En qué puedo ayudarte hoy{con_empresa}? Preguntame lo que necesites sobre la documentación cargada."
+    return (
+        f"¡Hola! ¿En qué puedo ayudarte hoy{con_empresa}? "
+        "Preguntame lo que necesites sobre la documentación cargada."
+    )
 
 
-def meta_docs_response(doc_names: list, company_name: str = None) -> str:
+def meta_docs_response(doc_names: list[str], company_name: str | None = None) -> str:
     nombres = ", ".join(doc_names)
     de_empresa = f" de {company_name}" if company_name else ""
     return (
@@ -216,18 +296,20 @@ def meta_docs_response(doc_names: list, company_name: str = None) -> str:
     )
 
 
-def _contacto(company_name: str = None) -> str:
-    return "soporte@tiendanova.com" if company_name == "TiendaNova" else "el soporte correspondiente"
+def _contacto(company_name: str | None = None) -> str:
+    return (
+        "soporte@tiendanova.com" if company_name == "TiendaNova" else "el soporte correspondiente"
+    )
 
 
-def offtopic_response(company_name: str = None) -> str:
+def offtopic_response(company_name: str | None = None) -> str:
     return (
         "No tengo esa información en mi documentación. Te recomiendo "
         f"contactar a {_contacto(company_name)}."
     )
 
 
-def card_data_response(company_name: str = None) -> str:
+def card_data_response(company_name: str | None = None) -> str:
     quien = company_name if company_name else "la tienda"
     return (
         f"No, {quien} no almacena los números completos de tu tarjeta. Los "
@@ -236,7 +318,7 @@ def card_data_response(company_name: str = None) -> str:
     )
 
 
-def route(text: str, doc_names: list, company_name: str = None):
+def route(text: str, doc_names: list[str], company_name: str | None = None) -> str | None:
     """Devuelve una respuesta directa si el mensaje matchea una regla,
     o None si debe ir al LLM.
 

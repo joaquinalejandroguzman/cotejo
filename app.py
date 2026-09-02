@@ -9,18 +9,28 @@ Ejecutar localmente:
     pip install -r requirements.txt
     streamlit run app.py
 """
+
 import base64
 import os
+from pathlib import Path
+
 import streamlit as st
 
-from pdf_utils import extract_text_from_pdf, truncate_for_context, combine_documents
-from groq_client import chat, GroqError, DEFAULT_MODEL
-from router import route
 from doc_selector import select_relevant_docs
+from groq_client import DEFAULT_MODEL, GroqError, chat
+from pdf_utils import (
+    Document,
+    PdfSource,
+    combine_documents,
+    extract_text_from_pdf,
+    truncate_for_context,
+)
+from router import route
 
-DOCS_DIR = os.path.join(os.path.dirname(__file__), "documentos")
-LOGO_PATH = os.path.join(os.path.dirname(__file__), "assets", "logo.png")
-FAVICON_PATH = os.path.join(os.path.dirname(__file__), "assets", "favicon.png")
+BASE_DIR = Path(__file__).parent
+DOCS_DIR = BASE_DIR / "documentos"
+LOGO_PATH = BASE_DIR / "assets" / "logo.png"
+FAVICON_PATH = BASE_DIR / "assets" / "favicon.png"
 GROQ_MODEL = DEFAULT_MODEL
 
 # Cuantos mensajes del historial se le mandan al modelo. El chat completo
@@ -30,10 +40,14 @@ GROQ_MODEL = DEFAULT_MODEL
 MAX_HISTORY_MESSAGES = 6
 
 
-def _get_groq_api_key():
+def _get_groq_api_key() -> str | None:
     try:
         if "GROQ_API_KEY" in st.secrets:
-            return st.secrets["GROQ_API_KEY"]
+            return str(st.secrets["GROQ_API_KEY"])
+    # st.secrets raises when no secrets file exists, which is the normal case
+    # when running locally with the key in the environment instead. Streamlit
+    # does not document a single exception type for this, so the fallback to
+    # the environment stays behind a broad catch on purpose.
     except Exception:
         pass
     return os.environ.get("GROQ_API_KEY")
@@ -44,8 +58,8 @@ GROQ_API_KEY = _get_groq_api_key()
 
 @st.cache_data(show_spinner=False)
 def _logo_base64() -> str:
-    with open(LOGO_PATH, "rb") as f:
-        return base64.b64encode(f.read()).decode()
+    return base64.b64encode(LOGO_PATH.read_bytes()).decode()
+
 
 # Documentacion base: 6 documentos separados (en vez de un unico PDF), cada
 # uno enfocado en un tema puntual. Asi el agente puede citar la fuente
@@ -61,7 +75,7 @@ DEFAULT_DOCS = [
 
 st.set_page_config(
     page_title="Agente TiendaNova",
-    page_icon=FAVICON_PATH if os.path.exists(FAVICON_PATH) else "🛍️",
+    page_icon=str(FAVICON_PATH) if FAVICON_PATH.exists() else "🛍️",
     layout="centered",
 )
 
@@ -75,7 +89,7 @@ EJEMPLOS = [
 ]
 
 with st.sidebar:
-    if os.path.exists(LOGO_PATH):
+    if LOGO_PATH.exists():
         st.markdown(
             "<div style='display:flex; align-items:center; justify-content:center; gap:10px;'>"
             f"<img src='data:image/png;base64,{_logo_base64()}' width='32'/>"
@@ -85,8 +99,7 @@ with st.sidebar:
         )
     else:
         st.markdown(
-            "<div style='text-align:center; font-size:1.3rem; font-weight:700;'>"
-            "🛍️ TiendaNova</div>",
+            "<div style='text-align:center; font-size:1.3rem; font-weight:700;'>🛍️ TiendaNova</div>",
             unsafe_allow_html=True,
         )
     st.markdown(
@@ -101,14 +114,18 @@ with st.sidebar:
                 st.session_state["pending_question"] = ejemplo
 
     incluir_base = st.checkbox(
-        "Usar documentación de TiendaNova (6 documentos)", value=True,
+        "Usar documentación de TiendaNova (6 documentos)",
+        value=True,
         help="Incluye privacidad y términos, devoluciones, programa de afiliados, "
-             "envíos, métodos de pago y garantía de productos. Desmarcala si vas a "
-             "subir tu propia documentación en su lugar."
+        "envíos, métodos de pago y garantía de productos. Desmarcala si vas a "
+        "subir tu propia documentación en su lugar.",
     )
     extras = st.file_uploader(
-        "Sumar o reemplazar con tus PDFs", type=["pdf"], accept_multiple_files=True,
-        help="Se combinan con la documentación de TiendaNova (o la reemplazan si desmarcás la opción de arriba).",
+        "Sumar o reemplazar con tus PDFs",
+        type=["pdf"],
+        accept_multiple_files=True,
+        help="Se combinan con la documentación de TiendaNova "
+        "(o la reemplazan si desmarcás la opción de arriba).",
         label_visibility="collapsed",
     )
 
@@ -118,17 +135,23 @@ if not GROQ_API_KEY:
         "en local, o como secret en Streamlit Community Cloud."
     )
 
+
 # ---------------------------------------------------------------------------
 # Carga del documento (con cache para no re-leer el PDF en cada mensaje)
 # ---------------------------------------------------------------------------
 @st.cache_data(show_spinner="Leyendo documento...")
-def load_doc_text(file_bytes_or_path):
+def load_doc_text(file_bytes_or_path: PdfSource | bytes | bytearray) -> str:
     import io
-    return extract_text_from_pdf(io.BytesIO(file_bytes_or_path) if isinstance(file_bytes_or_path, (bytes, bytearray)) else file_bytes_or_path)
+
+    return extract_text_from_pdf(
+        io.BytesIO(file_bytes_or_path)
+        if isinstance(file_bytes_or_path, (bytes, bytearray))
+        else file_bytes_or_path
+    )
 
 
 @st.cache_data(show_spinner="Identificando la empresa del documento...")
-def detect_company_name(doc_text: str, api_key: str, model: str = GROQ_MODEL):
+def detect_company_name(doc_text: str, api_key: str | None, model: str = GROQ_MODEL) -> str | None:
     """Le pregunta al modelo el nombre de la empresa/marca del documento
     cargado, para que el agente se presente con el nombre correcto en vez
     de asumir siempre "TiendaNova". Si no se puede determinar con
@@ -137,12 +160,15 @@ def detect_company_name(doc_text: str, api_key: str, model: str = GROQ_MODEL):
         return None
     muestra = doc_text[:3000]  # alcanza con el inicio del documento
     prompt = [
-        {"role": "system", "content": (
-            "Respondé ÚNICAMENTE con el nombre de la empresa o marca a la que "
-            "pertenece el siguiente documento, sin explicaciones ni comillas. "
-            "Si no podés determinarlo con certeza, respondé exactamente: "
-            "DESCONOCIDO."
-        )},
+        {
+            "role": "system",
+            "content": (
+                "Respondé ÚNICAMENTE con el nombre de la empresa o marca a la que "
+                "pertenece el siguiente documento, sin explicaciones ni comillas. "
+                "Si no podés determinarlo con certeza, respondé exactamente: "
+                "DESCONOCIDO."
+            ),
+        },
         {"role": "user", "content": muestra},
     ]
     try:
@@ -155,18 +181,20 @@ def detect_company_name(doc_text: str, api_key: str, model: str = GROQ_MODEL):
     return respuesta
 
 
-docs = []
+docs: list[Document] = []
 if incluir_base:
     for nombre, archivo in DEFAULT_DOCS:
-        docs.append((nombre, load_doc_text(os.path.join(DOCS_DIR, archivo))))
+        docs.append((nombre, load_doc_text(DOCS_DIR / archivo)))
 
-for f in (extras or []):
+for f in extras or []:
     docs.append((f.name, load_doc_text(f.getvalue())))
 
 if not docs:
     # Ni base ni extras: no hay nada que el agente pueda responder.
     # No usamos ningun documento de respaldo silencioso — avisamos y frenamos.
-    st.sidebar.warning("Sin documentos cargados. Activá la documentación de TiendaNova o subí un PDF.")
+    st.sidebar.warning(
+        "Sin documentos cargados. Activá la documentación de TiendaNova o subí un PDF."
+    )
 else:
     nombres = [nombre for nombre, _ in docs]
     if len(nombres) > 2:
@@ -189,6 +217,7 @@ doc_text_completo = truncate_for_context(combine_documents(docs), max_chars=4500
 # es TiendaNova (no hace falta preguntarle al modelo). Si el usuario cargo
 # solo documentos propios, se lo pedimos al modelo; si no se puede
 # determinar con confianza, el agente queda generico (sin marca fija).
+company_name: str | None
 if incluir_base:
     company_name = "TiendaNova"
 elif docs:
@@ -198,7 +227,9 @@ else:
 
 rol_agente = f"de {company_name}" if company_name else "virtual"
 tema_relacion = f"con {company_name}" if company_name else "con el contenido del documento"
-contacto = "soporte@tiendanova.com" if company_name == "TiendaNova" else "el soporte correspondiente"
+contacto = (
+    "soporte@tiendanova.com" if company_name == "TiendaNova" else "el soporte correspondiente"
+)
 
 
 def build_system_prompt(doc_text: str) -> str:
@@ -260,12 +291,13 @@ Responde siempre en español, breve, claro y cordial.
 --- FIN DEL DOCUMENTO ---
 """
 
+
 # ---------------------------------------------------------------------------
 # UI principal
 # ---------------------------------------------------------------------------
 col_titulo, col_reset = st.columns([5.6, 1.3], vertical_alignment="center")
 with col_titulo:
-    if os.path.exists(LOGO_PATH):
+    if LOGO_PATH.exists():
         st.markdown(
             "<div style='display:flex; align-items:center; justify-content:center; gap:14px;'>"
             f"<img src='data:image/png;base64,{_logo_base64()}' width='56'/>"
@@ -297,7 +329,10 @@ for msg in st.session_state.messages:
         st.markdown(msg["content"])
 
 if not docs:
-    st.info("Activá la documentación de TiendaNova o subí un PDF en la barra lateral para poder chatear.")
+    st.info(
+        "Activá la documentación de TiendaNova o subí un PDF "
+        "en la barra lateral para poder chatear."
+    )
     question = None
 else:
     question = st.chat_input("Escribe tu pregunta sobre políticas, envíos, devoluciones...")
@@ -327,7 +362,7 @@ if question:
             relevantes = select_relevant_docs(question, docs)
             system_prompt = build_system_prompt(combine_documents(relevantes))
             historial = st.session_state.messages[-MAX_HISTORY_MESSAGES:]
-            llm_messages = [{"role": "system", "content": system_prompt}] + historial
+            llm_messages = [{"role": "system", "content": system_prompt}, *historial]
             with st.spinner("Pensando..."):
                 try:
                     answer = chat(llm_messages, model=GROQ_MODEL, api_key=GROQ_API_KEY)
