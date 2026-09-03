@@ -170,3 +170,20 @@ class TestLosArchivosRealesEstanSincronizados:
         # Un archivo vacio pasaria la comparacion solo si pyproject tampoco
         # declara nada, lo cual seria otro error distinto.
         assert leer_requirements(REQUIREMENTS.read_text().splitlines())
+
+    def test_pandas_esta_declarada_explicitamente(self):
+        """pandas no puede quedar como dependencia heredada de streamlit.
+
+        streamlit declara `pandas<4,>=1.4.0`, asi que pandas ya se instala
+        aunque este proyecto no lo pida. Apoyarse en eso es fragil: el dia
+        que streamlit lo vuelva opcional o cambie el rango, la lectura de
+        datos tabulares se rompe sin que nada avise. Si lo usamos, lo
+        declaramos.
+        """
+        with PYPROJECT.open("rb") as f:
+            declaradas = leer_requirements(tomllib.load(f)["project"]["dependencies"])
+        nombres = {d.split(">")[0].split("<")[0].split("=")[0] for d in declaradas}
+        assert "pandas" in nombres, (
+            "pandas se usa para leer CSV pero no esta declarada en "
+            "pyproject.toml. Hoy se instala solo porque streamlit la arrastra."
+        )
