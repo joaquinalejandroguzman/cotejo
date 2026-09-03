@@ -35,8 +35,9 @@ quality_baseline:
 
 rules:
   proposal:
-    - Code, comments, tests, docs, and specs are English; Streamlit UI copy,
-      LLM system prompt, router canned responses, and PDF corpus stay Spanish
+    - Todo el proyecto va en español: código, comentarios, nombres de tests,
+      documentación, specs y mensajes de commit. Registro profesional y neutro
+      en los artefactos técnicos; el copy de la interfaz es rioplatense
     - Flag any change touching Groq model selection as production-impacting;
       Groq retires models on fixed dates and has broken this app twice
     - Include rollback plan for risky changes

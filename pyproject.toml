@@ -18,6 +18,7 @@ requires-python = ">=3.12"
 dependencies = [
     "streamlit>=1.36",
     "pypdf>=4.0",
+    "pandas>=2.0",
     "requests>=2.31",
 ]
 
@@ -38,7 +39,7 @@ Repository = "https://github.com/joaquinalejandroguzman/cotejo"
 # explicitly keeps `pip install -e .` working today; this list is replaced by
 # a package discovery entry once the modules move under a package directory.
 [tool.setuptools]
-py-modules = ["app", "router", "doc_selector", "groq_client", "pdf_utils"]
+py-modules = ["app", "router", "doc_selector", "groq_client", "pdf_utils", "tabla_utils", "ingesta"]
 
 # ---------------------------------------------------------------------------
 # Ruff — linter and formatter (replaces flake8 + black + isort)
@@ -78,7 +79,7 @@ ignore = [
 "tests/**" = ["ARG001", "ARG002"]
 
 [tool.ruff.lint.isort]
-known-first-party = ["app", "router", "doc_selector", "groq_client", "pdf_utils"]
+known-first-party = ["app", "router", "doc_selector", "groq_client", "pdf_utils", "tabla_utils", "ingesta"]
 
 [tool.ruff.format]
 quote-style = "double"
@@ -96,7 +97,7 @@ show_error_codes = true
 
 # Third-party packages without bundled type information.
 [[tool.mypy.overrides]]
-module = ["streamlit.*", "pypdf.*"]
+module = ["streamlit.*", "pypdf.*", "pandas.*"]
 ignore_missing_imports = true
 
 # ---------------------------------------------------------------------------

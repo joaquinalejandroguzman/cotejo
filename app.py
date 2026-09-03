@@ -18,13 +18,8 @@ import streamlit as st
 
 from doc_selector import select_relevant_docs
 from groq_client import GroqError, chat, resolve_model
-from pdf_utils import (
-    Document,
-    PdfSource,
-    combine_documents,
-    extract_text_from_pdf,
-    truncate_for_context,
-)
+from ingesta import FORMATOS_SOPORTADOS, IngestaError, extraer_documentos
+from pdf_utils import Document, combine_documents, truncate_for_context
 from router import route
 
 BASE_DIR = Path(__file__).parent
@@ -121,11 +116,11 @@ with st.sidebar:
         "subir tu propia documentación en su lugar.",
     )
     extras = st.file_uploader(
-        "Sumar o reemplazar con tus PDFs",
-        type=["pdf"],
+        "Sumar o reemplazar con tus documentos",
+        type=list(FORMATOS_SOPORTADOS),
         accept_multiple_files=True,
-        help="Se combinan con la documentación de TiendaNova "
-        "(o la reemplazan si desmarcás la opción de arriba).",
+        help="Acepta PDF y planillas en CSV. Se combinan con la documentación "
+        "de TiendaNova, o la reemplazan si desmarcás la opción de arriba.",
         label_visibility="collapsed",
     )
 
@@ -139,15 +134,10 @@ if not GROQ_API_KEY:
 # ---------------------------------------------------------------------------
 # Carga del documento (con cache para no re-leer el PDF en cada mensaje)
 # ---------------------------------------------------------------------------
-@st.cache_data(show_spinner="Leyendo documento...")
-def load_doc_text(file_bytes_or_path: PdfSource | bytes | bytearray) -> str:
-    import io
-
-    return extract_text_from_pdf(
-        io.BytesIO(file_bytes_or_path)
-        if isinstance(file_bytes_or_path, (bytes, bytearray))
-        else file_bytes_or_path
-    )
+@st.cache_data(show_spinner="Leyendo documentación...")
+def cargar(nombre_archivo: str, origen: bytes) -> list[Document]:
+    """Extrae el contenido de un archivo, sea del formato que sea."""
+    return extraer_documentos(nombre_archivo, origen)
 
 
 @st.cache_data(show_spinner="Identificando la empresa del documento...")
@@ -183,17 +173,23 @@ def detect_company_name(doc_text: str, api_key: str | None, model: str = GROQ_MO
 
 docs: list[Document] = []
 if incluir_base:
-    for nombre, archivo in DEFAULT_DOCS:
-        docs.append((nombre, load_doc_text(DOCS_DIR / archivo)))
+    for titulo, archivo in DEFAULT_DOCS:
+        # El despacho necesita el nombre del archivo para saber el formato,
+        # pero el agente tiene que citar el titulo legible del documento.
+        for _, texto in cargar(archivo, (DOCS_DIR / archivo).read_bytes()):
+            docs.append((titulo, texto))
 
 for f in extras or []:
-    docs.append((f.name, load_doc_text(f.getvalue())))
+    try:
+        docs.extend(cargar(f.name, f.getvalue()))
+    except IngestaError as e:
+        st.sidebar.error(str(e))
 
 if not docs:
     # Ni base ni extras: no hay nada que el agente pueda responder.
     # No usamos ningun documento de respaldo silencioso — avisamos y frenamos.
     st.sidebar.warning(
-        "Sin documentos cargados. Activá la documentación de TiendaNova o subí un PDF."
+        "Sin documentos cargados. Activá la documentación de TiendaNova o subí un archivo."
     )
 else:
     nombres = [nombre for nombre, _ in docs]
@@ -330,7 +326,7 @@ for msg in st.session_state.messages:
 
 if not docs:
     st.info(
-        "Activá la documentación de TiendaNova o subí un PDF "
+        "Activá la documentación de TiendaNova o subí un archivo "
         "en la barra lateral para poder chatear."
     )
     question = None
