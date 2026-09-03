@@ -42,7 +42,7 @@ Repository = "https://github.com/joaquinalejandroguzman/cotejo"
 # explicitly keeps `pip install -e .` working today; this list is replaced by
 # a package discovery entry once the modules move under a package directory.
 [tool.setuptools]
-py-modules = ["app", "router", "doc_selector", "groq_client", "pdf_utils", "tabla_utils", "ingesta"]
+py-modules = ["app", "router", "doc_selector", "groq_client", "pdf_utils", "tabla_utils", "ingesta", "bm25"]
 
 # ---------------------------------------------------------------------------
 # Ruff — linter and formatter (replaces flake8 + black + isort)
@@ -85,7 +85,7 @@ ignore = [
 "tests/**" = ["ARG001", "ARG002"]
 
 [tool.ruff.lint.isort]
-known-first-party = ["app", "router", "doc_selector", "groq_client", "pdf_utils", "tabla_utils", "ingesta"]
+known-first-party = ["app", "router", "doc_selector", "groq_client", "pdf_utils", "tabla_utils", "ingesta", "bm25"]
 
 [tool.ruff.format]
 quote-style = "double"

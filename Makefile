@@ -19,8 +19,8 @@ RUFF    := $(BIN)ruff
 MYPY    := $(BIN)mypy
 PYTEST  := $(PY) -m pytest
 
-SRC     := app.py router.py doc_selector.py groq_client.py pdf_utils.py tabla_utils.py ingesta.py
-PATHS   := $(SRC) scripts tests
+SRC     := app.py router.py doc_selector.py groq_client.py pdf_utils.py tabla_utils.py ingesta.py bm25.py
+PATHS   := $(SRC) scripts tests evaluacion
 
 .DEFAULT_GOAL := help
 .PHONY: help venv install install-e2e run test test-cov test-e2e lint format format-check typecheck check clean
