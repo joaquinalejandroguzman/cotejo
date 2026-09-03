@@ -2,7 +2,7 @@
 
 ## Intent
 
-Sabia hoy solo lee PDF. Lo que los empleados preguntan todo el día —precios, stock, quién ve cada tema— vive en planillas, no en PDF. Mientras el producto no las lea, el dueño sigue siendo el cuello de botella y la herramienta no resuelve el dolor que promete. Excel y Sheets son el diferenciador central, no un extra.
+Cotejo hoy solo lee PDF. Lo que los empleados preguntan todo el día —precios, stock, quién ve cada tema— vive en planillas, no en PDF. Mientras el producto no las lea, el dueño sigue siendo el cuello de botella y la herramienta no resuelve el dolor que promete. Excel y Sheets son el diferenciador central, no un extra.
 
 ## Scope
 

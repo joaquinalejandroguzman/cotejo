@@ -14,7 +14,7 @@
 
 ## Deuda detectada, fuera del alcance de este cambio
 
-- `pyproject.toml` ya dice `name = "sabia"`, pero `app.py`, `README.md` y `openspec/config.yaml` siguen con el branding de «TiendaNova» y el encuadre de agente de cara al cliente. Quedaron desactualizados frente al pivot a soporte interno.
+- `pyproject.toml` ya dice `name = "cotejo"`, pero `app.py`, `README.md` y `openspec/config.yaml` siguen con el branding de «TiendaNova» y el encuadre de agente de cara al cliente. Quedaron desactualizados frente al pivot a soporte interno.
 - `openspec/config.yaml` dice explícitamente que el código, los comentarios, los tests y las specs van en inglés. Eso contradice la convención vigente del proyecto, que es español en toda la superficie técnica.
 
 Ninguna de las dos bloquea este cambio, pero se van a notar en cualquier propuesta que toque texto visible.
