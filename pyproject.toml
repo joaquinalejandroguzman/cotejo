@@ -30,6 +30,9 @@ dev = [
     "ruff>=0.6",
     "mypy>=1.11",
     "types-requests",
+    # Solo para generar el corpus de demostracion (scripts/generar_corpus.py).
+    # No corre en produccion, por eso no va en requirements.txt.
+    "reportlab>=4.0",
 ]
 
 [project.urls]
@@ -75,6 +78,9 @@ ignore = [
 ]
 
 [tool.ruff.lint.per-file-ignores]
+# Archivo de contenido: textos legales y comerciales largos. Partirlos a 100
+# columnas los vuelve mas dificiles de leer y editar, no menos.
+"scripts/generar_corpus.py" = ["E501"]
 # Tests may shadow names and use assertions freely.
 "tests/**" = ["ARG001", "ARG002"]
 
@@ -97,7 +103,7 @@ show_error_codes = true
 
 # Third-party packages without bundled type information.
 [[tool.mypy.overrides]]
-module = ["streamlit.*", "pypdf.*", "pandas.*"]
+module = ["streamlit.*", "pypdf.*", "pandas.*", "reportlab.*"]
 ignore_missing_imports = true
 
 # ---------------------------------------------------------------------------
