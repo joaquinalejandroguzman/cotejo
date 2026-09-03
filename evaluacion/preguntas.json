@@ -1,0 +1,393 @@
+{
+  "corpus": "corpus/pampa-sur",
+  "descripcion": "Preguntas que un empleado de una distribuidora le hace a la documentación interna de su empresa. Están escritas como se preguntan de verdad: elípticas, con jerga del rubro, a veces mal formuladas, buscando un caso propio y no una definición. Cada una declara el documento que contiene la respuesta y los hechos que una respuesta correcta debe contener.",
+  "preguntas": [
+    {
+      "id": "PRE-01",
+      "pregunta": "¿cuánto sale el bulto de yerba Rosamonte?",
+      "documento": "lista_precios.csv",
+      "hechos": ["2859,90"],
+      "categoria": "precios"
+    },
+    {
+      "id": "PRE-02",
+      "pregunta": "¿cuántas unidades trae el bulto de la gaseosa de 2,25?",
+      "documento": "lista_precios.csv",
+      "hechos": ["6"],
+      "categoria": "precios"
+    },
+    {
+      "id": "PRE-03",
+      "pregunta": "el precio del aceite Cocinero, ¿es con IVA o sin IVA?",
+      "documento": "lista_precios.csv",
+      "hechos": ["3189,90"],
+      "categoria": "precios"
+    },
+    {
+      "id": "PRE-04",
+      "pregunta": "me pide 25 bultos de fideos Marolio, ¿qué bonificación le doy?",
+      "documento": "lista_precios.csv",
+      "hechos": ["5,00"],
+      "categoria": "precios"
+    },
+    {
+      "id": "PRE-05",
+      "pregunta": "¿desde cuándo rige esta lista de precios?",
+      "documento": "lista_precios.csv",
+      "hechos": ["01/09/2026"],
+      "categoria": "precios"
+    },
+    {
+      "id": "PRE-06",
+      "pregunta": "si le hago el descuento por volumen y el de contado, ¿se suman o van en cascada?",
+      "documento": "lista_precios.csv",
+      "hechos": ["cascada"],
+      "categoria": "precios"
+    },
+    {
+      "id": "PRE-07",
+      "pregunta": "¿qué productos tenemos con IVA al 10,5?",
+      "documento": "lista_precios.csv",
+      "hechos": ["10,5"],
+      "categoria": "precios"
+    },
+    {
+      "id": "PRE-08",
+      "pregunta": "la Coca de 2,25, ¿la puedo mandar a Bahía o es solo AMBA?",
+      "documento": "lista_precios.csv",
+      "hechos": ["AMBA"],
+      "categoria": "precios"
+    },
+    {
+      "id": "PRE-09",
+      "pregunta": "¿cuál es el código del fernet 1882?",
+      "documento": "lista_precios.csv",
+      "hechos": ["6050"],
+      "categoria": "precios"
+    },
+    {
+      "id": "PRE-10",
+      "pregunta": "¿qué proveedor nos vende el queso cremoso?",
+      "documento": "lista_precios.csv",
+      "hechos": ["Sancor"],
+      "categoria": "precios"
+    },
+    {
+      "id": "PRE-11",
+      "pregunta": "¿los precios de la lista incluyen las percepciones?",
+      "documento": "lista_precios.csv",
+      "hechos": ["percepciones"],
+      "categoria": "precios"
+    },
+    {
+      "id": "PRE-12",
+      "pregunta": "¿cuánto sale el artículo 9999?",
+      "documento": "lista_precios.csv",
+      "hechos": [],
+      "categoria": "precios",
+      "sin_respuesta": true,
+      "nota": "El artículo no existe. Una respuesta correcta dice que no lo encuentra, sin dar el precio de otro."
+    },
+
+    {
+      "id": "STK-01",
+      "pregunta": "¿queda stock de yerba Playadito?",
+      "documento": "stock_depositos.csv",
+      "hechos": ["0"],
+      "categoria": "stock"
+    },
+    {
+      "id": "STK-02",
+      "pregunta": "¿en qué ubicación está el fernet?",
+      "documento": "stock_depositos.csv",
+      "hechos": ["F-02-1"],
+      "categoria": "stock"
+    },
+    {
+      "id": "STK-03",
+      "pregunta": "¿qué diferencia hay entre el stock mínimo y el punto de reposición?",
+      "documento": "stock_depositos.csv",
+      "hechos": ["reposicion"],
+      "categoria": "stock"
+    },
+    {
+      "id": "STK-04",
+      "pregunta": "el arroz Gallo Oro, ¿está por debajo del mínimo?",
+      "documento": "stock_depositos.csv",
+      "hechos": ["480"],
+      "categoria": "stock"
+    },
+    {
+      "id": "STK-05",
+      "pregunta": "¿cuánto hay comprometido de la Coca de 354?",
+      "documento": "stock_depositos.csv",
+      "hechos": ["480"],
+      "categoria": "stock"
+    },
+    {
+      "id": "STK-06",
+      "pregunta": "¿qué hay en el depósito de averías?",
+      "documento": "stock_depositos.csv",
+      "hechos": ["AVER"],
+      "categoria": "stock"
+    },
+    {
+      "id": "STK-07",
+      "pregunta": "¿tenemos algo en tránsito?",
+      "documento": "stock_depositos.csv",
+      "hechos": ["TRAN"],
+      "categoria": "stock"
+    },
+    {
+      "id": "STK-08",
+      "pregunta": "¿qué vencimiento tiene la leche que tenemos en cámara?",
+      "documento": "stock_depositos.csv",
+      "hechos": ["18/09/2026"],
+      "categoria": "stock"
+    },
+    {
+      "id": "STK-09",
+      "pregunta": "¿cuándo se hizo el último inventario?",
+      "documento": "stock_depositos.csv",
+      "hechos": ["29/08/2026"],
+      "categoria": "stock"
+    },
+    {
+      "id": "STK-10",
+      "pregunta": "¿en qué depósito guardamos las bebidas?",
+      "documento": "stock_depositos.csv",
+      "hechos": ["DEP02"],
+      "categoria": "stock"
+    },
+
+    {
+      "id": "LIC-01",
+      "pregunta": "entré a trabajar en marzo de 2019, ¿cuántos días de vacaciones me tocan este año?",
+      "documento": "politica_licencias.pdf",
+      "hechos": ["21"],
+      "categoria": "licencias",
+      "nota": "Al 31/12/2026 tiene más de 5 y menos de 10 años: 21 días. Requiere calcular, no recitar la tabla."
+    },
+    {
+      "id": "LIC-02",
+      "pregunta": "¿con cuánta anticipación me tienen que avisar las vacaciones?",
+      "documento": "politica_licencias.pdf",
+      "hechos": ["60"],
+      "categoria": "conflicto",
+      "nota": "CASO CLAVE. La respuesta correcta es 60 días (art. 74 CCT 130/75, norma más favorable). El reglamento_interno.pdf de 2022 dice 45 días, que es plausible pero está desactualizado."
+    },
+    {
+      "id": "LIC-03",
+      "pregunta": "me caso en noviembre, ¿cuántos días tengo?",
+      "documento": "politica_licencias.pdf",
+      "hechos": ["12"],
+      "categoria": "licencias"
+    },
+    {
+      "id": "LIC-04",
+      "pregunta": "¿es verdad que ahora puedo partir las vacaciones en dos?",
+      "documento": "politica_licencias.pdf",
+      "hechos": ["7"],
+      "categoria": "licencias"
+    },
+    {
+      "id": "LIC-05",
+      "pregunta": "falleció mi suegra, ¿tengo licencia?",
+      "documento": "politica_licencias.pdf",
+      "hechos": ["2"],
+      "categoria": "licencias"
+    },
+    {
+      "id": "LIC-06",
+      "pregunta": "rindo tres finales en la facultad, ¿cuántos días me dan?",
+      "documento": "politica_licencias.pdf",
+      "hechos": ["4"],
+      "categoria": "licencias"
+    },
+    {
+      "id": "LIC-07",
+      "pregunta": "estoy con carpeta hace tres meses y tengo dos hijos, ¿hasta cuándo me pagan?",
+      "documento": "politica_licencias.pdf",
+      "hechos": ["6"],
+      "categoria": "licencias"
+    },
+    {
+      "id": "LIC-08",
+      "pregunta": "¿me pagan las vacaciones antes de salir o con el sueldo de fin de mes?",
+      "documento": "politica_licencias.pdf",
+      "hechos": ["inicio"],
+      "categoria": "licencias"
+    },
+    {
+      "id": "LIC-09",
+      "pregunta": "me enfermé estando de vacaciones, ¿pierdo esos días?",
+      "documento": "politica_licencias.pdf",
+      "hechos": ["reprograman"],
+      "categoria": "licencias"
+    },
+    {
+      "id": "LIC-10",
+      "pregunta": "el certificado médico, ¿me lo aceptan por mail o lo tengo que llevar en papel?",
+      "documento": "politica_licencias.pdf",
+      "hechos": ["digital"],
+      "categoria": "licencias"
+    },
+    {
+      "id": "LIC-11",
+      "pregunta": "trabajo en depósito, ¿puedo tomarme vacaciones en diciembre?",
+      "documento": "politica_licencias.pdf",
+      "hechos": ["diciembre"],
+      "categoria": "licencias"
+    },
+    {
+      "id": "LIC-12",
+      "pregunta": "¿el 26 de septiembre laburamos?",
+      "documento": "politica_licencias.pdf",
+      "hechos": ["26"],
+      "categoria": "licencias"
+    },
+
+    {
+      "id": "FAC-01",
+      "pregunta": "me llegó una factura C de un monotributista, ¿me genera crédito fiscal?",
+      "documento": "procedimiento_facturas.pdf",
+      "hechos": ["no"],
+      "categoria": "facturas"
+    },
+    {
+      "id": "FAC-02",
+      "pregunta": "¿sigue existiendo la factura M?",
+      "documento": "procedimiento_facturas.pdf",
+      "hechos": ["eliminada"],
+      "categoria": "facturas"
+    },
+    {
+      "id": "FAC-03",
+      "pregunta": "si le vendemos a un monotributista, ¿qué factura le hacemos?",
+      "documento": "procedimiento_facturas.pdf",
+      "hechos": ["A"],
+      "categoria": "facturas",
+      "nota": "Corresponde Factura A, no B. Es el error más común del rubro."
+    },
+    {
+      "id": "FAC-04",
+      "pregunta": "el CAE está vencido, ¿la factura no sirve?",
+      "documento": "procedimiento_facturas.pdf",
+      "hechos": ["no significa"],
+      "categoria": "facturas"
+    },
+    {
+      "id": "FAC-05",
+      "pregunta": "la percepción de IVA, ¿va al costo de la mercadería?",
+      "documento": "procedimiento_facturas.pdf",
+      "hechos": ["nunca"],
+      "categoria": "facturas"
+    },
+    {
+      "id": "FAC-06",
+      "pregunta": "¿hasta cuándo tengo tiempo de cargar las facturas del mes?",
+      "documento": "procedimiento_facturas.pdf",
+      "hechos": ["10"],
+      "categoria": "facturas"
+    },
+    {
+      "id": "FAC-07",
+      "pregunta": "¿puedo cargar la factura si todavía no llegó el remito?",
+      "documento": "procedimiento_facturas.pdf",
+      "hechos": ["remito"],
+      "categoria": "facturas"
+    },
+    {
+      "id": "FAC-08",
+      "pregunta": "vino una factura que dice operación sujeta a retención, ¿qué hago?",
+      "documento": "procedimiento_facturas.pdf",
+      "hechos": ["Tesoreria"],
+      "categoria": "facturas"
+    },
+    {
+      "id": "FAC-09",
+      "pregunta": "¿cuánto tiempo hay que guardar los remitos?",
+      "documento": "procedimiento_facturas.pdf",
+      "hechos": ["dos"],
+      "categoria": "facturas"
+    },
+    {
+      "id": "FAC-10",
+      "pregunta": "¿cómo verifico si una factura es válida?",
+      "documento": "procedimiento_facturas.pdf",
+      "hechos": ["ARCA"],
+      "categoria": "facturas"
+    },
+
+    {
+      "id": "REG-01",
+      "pregunta": "¿a qué hora abre el depósito los sábados?",
+      "documento": "reglamento_interno.pdf",
+      "hechos": ["07:00"],
+      "categoria": "reglamento"
+    },
+    {
+      "id": "REG-02",
+      "pregunta": "¿cuántos minutos de tolerancia tengo antes de que me descuenten?",
+      "documento": "reglamento_interno.pdf",
+      "hechos": ["10"],
+      "categoria": "reglamento"
+    },
+    {
+      "id": "REG-03",
+      "pregunta": "¿las horas extras del sábado a la tarde cómo se pagan?",
+      "documento": "reglamento_interno.pdf",
+      "hechos": ["100"],
+      "categoria": "reglamento"
+    },
+    {
+      "id": "REG-04",
+      "pregunta": "me dieron un apercibimiento y no estoy de acuerdo, ¿hasta cuándo puedo reclamar?",
+      "documento": "reglamento_interno.pdf",
+      "hechos": ["30"],
+      "categoria": "reglamento"
+    },
+    {
+      "id": "REG-05",
+      "pregunta": "¿cuántos uniformes me tienen que dar por año?",
+      "documento": "reglamento_interno.pdf",
+      "hechos": ["dos"],
+      "categoria": "reglamento"
+    },
+    {
+      "id": "REG-06",
+      "pregunta": "me lastimé cargando un pallet, ¿a quién aviso?",
+      "documento": "reglamento_interno.pdf",
+      "hechos": ["supervisor"],
+      "categoria": "reglamento"
+    },
+    {
+      "id": "REG-07",
+      "pregunta": "¿cuándo cobramos el sueldo?",
+      "documento": "reglamento_interno.pdf",
+      "hechos": ["cuatro"],
+      "categoria": "reglamento"
+    },
+    {
+      "id": "REG-08",
+      "pregunta": "¿puedo manejar el autoelevador?",
+      "documento": "reglamento_interno.pdf",
+      "hechos": ["habilitacion"],
+      "categoria": "reglamento"
+    },
+    {
+      "id": "REG-09",
+      "pregunta": "¿cuánto dura el período de prueba?",
+      "documento": "reglamento_interno.pdf",
+      "hechos": ["tres"],
+      "categoria": "reglamento"
+    },
+    {
+      "id": "REG-10",
+      "pregunta": "¿cuándo pagan el aguinaldo?",
+      "documento": "reglamento_interno.pdf",
+      "hechos": ["30 de junio"],
+      "categoria": "reglamento"
+    }
+  ]
+}
