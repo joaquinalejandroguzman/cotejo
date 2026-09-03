@@ -2,7 +2,7 @@
 
 ## Propósito
 
-Sabia hoy solo lee PDF. Esta especificación cubre la ingesta de datos tabulares (CSV, Excel `.xlsx`/`.xls`) y de una Google Sheets publicada, más la selección de filas relevantes para no exceder el presupuesto de contexto. No modifica `pdf_utils.py` ni el contrato `Document = tuple[str, str]` que ya consumen `doc_selector.py` y `combine_documents`. Es una especificación nueva: no existe `openspec/specs/ingesta/` previo.
+Cotejo hoy solo lee PDF. Esta especificación cubre la ingesta de datos tabulares (CSV, Excel `.xlsx`/`.xls`) y de una Google Sheets publicada, más la selección de filas relevantes para no exceder el presupuesto de contexto. No modifica `pdf_utils.py` ni el contrato `Document = tuple[str, str]` que ya consumen `doc_selector.py` y `combine_documents`. Es una especificación nueva: no existe `openspec/specs/ingesta/` previo.
 
 ## Mapeo a la cadena de entrega (5 PR)
 
