@@ -1,5 +1,28 @@
+# Tema oscuro con una paleta propia, no la que trae Streamlit por defecto.
+#
+# El acento sale del azul del logo (tono 218, saturacion plena), pero
+# aclarado: el azul original, #0051DB, da 2,86:1 sobre este fondo y el minimo
+# accesible es 3:1. Subido a #337EFF conserva el tono y llega a 4,98:1, que
+# pasa incluso el umbral de 4,5 exigido para texto normal.
+#
+# Contrastes verificados sobre el fondo:
+#   texto principal   #E4EAF2   15,52:1
+#   texto secundario  #93A1B5    7,16:1
+#   acento            #337EFF    4,98:1
+
 [theme]
 base = "dark"
+
+# Casi negro con una pizca de azul. El negro puro sobre pantalla brillante
+# cansa la vista, y un neutro sin tinte deja al acento desconectado.
+backgroundColor = "#0E1217"
+
+# Segunda capa para la barra lateral, los paneles y los mensajes del chat.
+# Apenas mas clara que el fondo: separa sin necesidad de bordes.
+secondaryBackgroundColor = "#161C24"
+
+textColor = "#E4EAF2"
+primaryColor = "#337EFF"
 
 [client]
 toolbarMode = "minimal"

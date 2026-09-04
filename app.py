@@ -24,6 +24,10 @@ from ingesta import FORMATOS_SOPORTADOS, IngestaError, extraer_documentos
 from pdf_utils import Document, combine_documents, truncate_for_context
 from router import route
 
+# Texto secundario del tema. Vive aca y no repetido en cada bloque de HTML
+# para que un cambio de paleta no obligue a buscarlo en cuatro lugares.
+COLOR_APAGADO = "#93A1B5"
+
 BASE_DIR = Path(__file__).parent
 DOCS_DIR = BASE_DIR / "corpus" / "pampa-surena"
 LOGO_PATH = BASE_DIR / "assets" / "logo.png"
@@ -45,6 +49,18 @@ def _get_groq_api_key() -> str | None:
 
 
 GROQ_API_KEY = _get_groq_api_key()
+
+
+def _estado() -> str:
+    """Estado real del asistente, no un cartel fijo.
+
+    Antes decia "Online" siempre, incluso sin API key configurada, o sea
+    justo cuando nada funciona. Un indicador que no refleja el estado es
+    peor que no tener ninguno: entrena a ignorarlo.
+    """
+    if not GROQ_API_KEY:
+        return "Sin conectar"
+    return f"Conectado · {GROQ_MODEL.split('/')[-1]}"
 
 
 @st.cache_data(show_spinner=False)
@@ -99,8 +115,8 @@ with st.sidebar:
             unsafe_allow_html=True,
         )
     st.markdown(
-        "<div style='text-align:center; color:#8a8a8a; font-size:0.85rem; "
-        "margin-top:6px; margin-bottom:18px;'>🟢 Online</div>",
+        f"<div style='text-align:center; color:{COLOR_APAGADO}; font-size:0.85rem; "
+        f"margin-top:6px; margin-bottom:18px;'>{_estado()}</div>",
         unsafe_allow_html=True,
     )
 
@@ -200,7 +216,7 @@ else:
         st.sidebar.caption(f"📄 Cargado: {' + '.join(nombres)}")
 
 st.sidebar.markdown(
-    "<div style='text-align:center; color:#8a8a8a; font-size:0.8rem;'>"
+    f"<div style='text-align:center; color:{COLOR_APAGADO}; font-size:0.8rem;'>"
     "Joaquín A. Guzmán · 2026</div>",
     unsafe_allow_html=True,
 )
@@ -306,7 +322,7 @@ with col_titulo:
             unsafe_allow_html=True,
         )
     st.markdown(
-        "<div style='text-align:center; color:#8a8a8a; font-size:0.9rem;'>"
+        f"<div style='text-align:center; color:{COLOR_APAGADO}; font-size:0.9rem;'>"
         "Cada respuesta, contrastada con su fuente</div>",
         unsafe_allow_html=True,
     )
