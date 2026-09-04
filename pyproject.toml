@@ -5,14 +5,14 @@ build-backend = "setuptools.build_meta"
 [project]
 name = "cotejo"
 version = "0.1.0"
-description = "Document-grounded support agent over a PDF corpus, with a deterministic pre-LLM router."
+description = "Consulta sobre la documentacion interna de una PyME, con un router determinista antes del modelo."
 readme = "README.md"
 license = { file = "LICENSE" }
 authors = [{ name = "Joaquín A. Guzmán" }]
 
-# Floor is 3.12: that is the default interpreter on Streamlit Community
-# Cloud, our deployment target. CI additionally exercises 3.13 and 3.14,
-# which Community Cloud also supports.
+# El piso es 3.12: es el interprete por defecto de Streamlit Community
+# Cloud, que es donde se despliega. El CI ademas ejercita 3.13 y 3.14, que
+# Community Cloud tambien soporta.
 requires-python = ">=3.12"
 
 dependencies = [
@@ -38,14 +38,15 @@ dev = [
 [project.urls]
 Repository = "https://github.com/joaquinalejandroguzman/cotejo"
 
-# The project is still a flat set of top-level modules. Declaring them
-# explicitly keeps `pip install -e .` working today; this list is replaced by
-# a package discovery entry once the modules move under a package directory.
+# El proyecto sigue siendo un conjunto plano de modulos en la raiz.
+# Declararlos explicitamente mantiene funcionando `pip install -e .`; esta
+# lista se reemplaza por descubrimiento automatico cuando los modulos pasen a
+# vivir dentro de un paquete.
 [tool.setuptools]
 py-modules = ["app", "router", "doc_selector", "groq_client", "pdf_utils", "tabla_utils", "ingesta", "bm25"]
 
 # ---------------------------------------------------------------------------
-# Ruff — linter and formatter (replaces flake8 + black + isort)
+# Ruff: linter y formateador (reemplaza a flake8, black e isort)
 # ---------------------------------------------------------------------------
 [tool.ruff]
 target-version = "py312"
@@ -69,9 +70,9 @@ select = [
     "RUF",  # ruff-specific rules
 ]
 ignore = [
-    # The product surface is Spanish on purpose (UI copy, LLM system prompt,
-    # router replies). Ambiguous-unicode warnings fire on legitimate accented
-    # characters and would be pure noise here.
+    # La superficie del producto es en espanol a proposito (interfaz, prompt
+    # del modelo, respuestas del router). Las advertencias de unicode ambiguo
+    # se disparan con acentos legitimos y aca serian puro ruido.
     "RUF001",
     "RUF002",
     "RUF003",
@@ -81,7 +82,7 @@ ignore = [
 # Archivo de contenido: textos legales y comerciales largos. Partirlos a 100
 # columnas los vuelve mas dificiles de leer y editar, no menos.
 "scripts/generar_corpus.py" = ["E501"]
-# Tests may shadow names and use assertions freely.
+# Los tests pueden tapar nombres y usar aserciones con libertad.
 "tests/**" = ["ARG001", "ARG002"]
 
 [tool.ruff.lint.isort]
@@ -92,7 +93,7 @@ quote-style = "double"
 indent-style = "space"
 
 # ---------------------------------------------------------------------------
-# Mypy — static type checking
+# Mypy: verificacion estatica de tipos
 # ---------------------------------------------------------------------------
 [tool.mypy]
 python_version = "3.12"
@@ -101,7 +102,7 @@ warn_unreachable = true
 pretty = true
 show_error_codes = true
 
-# Third-party packages without bundled type information.
+# Paquetes de terceros que no traen informacion de tipos.
 [[tool.mypy.overrides]]
 module = ["streamlit.*", "pypdf.*", "pandas.*", "reportlab.*"]
 ignore_missing_imports = true
@@ -111,15 +112,16 @@ ignore_missing_imports = true
 # ---------------------------------------------------------------------------
 [tool.pytest.ini_options]
 testpaths = ["tests"]
-# End-to-end tests boot a real Streamlit server and drive a browser, so they
-# are excluded from the default run and invoked explicitly via `make test-e2e`.
+# Los tests de punta a punta levantan un servidor Streamlit real y manejan un
+# navegador, asi que quedan fuera de la corrida por defecto y se invocan
+# explicitamente con `make test-e2e`.
 addopts = "-m 'not e2e'"
 markers = [
-    "e2e: end-to-end test driving a real browser against a running app (slow)",
+    "e2e: test de punta a punta que maneja un navegador real contra la app (lento)",
 ]
 
 # ---------------------------------------------------------------------------
-# Coverage
+# Cobertura
 # ---------------------------------------------------------------------------
 [tool.coverage.run]
 branch = true

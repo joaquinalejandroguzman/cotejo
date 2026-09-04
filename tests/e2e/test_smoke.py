@@ -1,8 +1,8 @@
-"""Smoke test proving the end-to-end harness reaches a live app.
+"""Test de humo: prueba que el arnes e2e llega a una app viva.
 
-This is deliberately minimal. Its job is to fail loudly if the browser, the
-server fixture, or the app shell stops working — not to assert product
-behaviour, which belongs in dedicated end-to-end suites.
+Es deliberadamente minimo. Su trabajo es fallar fuerte si se rompe el
+navegador, el fixture del servidor o la estructura de la app. No verifica
+comportamiento de producto, que corresponde a suites dedicadas.
 """
 
 import pytest
@@ -10,26 +10,20 @@ from playwright.sync_api import Page, expect
 
 
 @pytest.mark.e2e
-def test_app_shell_renders_without_an_api_key(page: Page, streamlit_server: str) -> None:
-    """The app must render its shell even with no Groq API key configured."""
+def test_la_app_renderiza_sin_api_key(page: Page, streamlit_server: str) -> None:
+    """La app tiene que renderizar aunque no haya API key configurada."""
     page.goto(streamlit_server)
 
-    # Product copy is Spanish by design; assert against what a user sees.
-    expect(page.get_by_role("heading", name="Agente de Soporte Virtual")).to_be_visible(
-        timeout=30_000
-    )
+    # El copy del producto es en espanol por diseno: se verifica lo que ve el usuario.
+    expect(page.get_by_role("heading", name="Cotejo")).to_be_visible(timeout=30_000)
     expect(page.get_by_role("button", name="Nuevo chat")).to_be_visible()
 
 
 @pytest.mark.e2e
-def test_question_input_is_available_with_the_default_corpus(
-    page: Page, streamlit_server: str
-) -> None:
-    """The bundled corpus loads by default, so the chat input must be usable."""
+def test_el_input_esta_disponible_con_el_corpus_de_demo(page: Page, streamlit_server: str) -> None:
+    """El corpus de demo carga por defecto, asi que el input tiene que estar usable."""
     page.goto(streamlit_server)
 
-    chat_input = page.get_by_placeholder(
-        "Escribe tu pregunta sobre políticas, envíos, devoluciones..."
-    )
+    chat_input = page.get_by_placeholder("Preguntá sobre precios, stock, licencias, facturas...")
     expect(chat_input).to_be_visible(timeout=30_000)
     expect(chat_input).to_be_editable()

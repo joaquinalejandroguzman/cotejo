@@ -6,7 +6,9 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 from pdf_utils import combine_documents, extract_text_from_pdf, truncate_for_context
 
-PDF_PATH = Path(__file__).resolve().parent.parent / "documentos" / "politica_devoluciones.pdf"
+PDF_PATH = (
+    Path(__file__).resolve().parent.parent / "corpus" / "pampa-sur" / "politica_licencias.pdf"
+)
 
 
 class TestExtractTextFromPdf:
@@ -16,9 +18,9 @@ class TestExtractTextFromPdf:
 
     def test_contiene_secciones_esperadas(self):
         texto = extract_text_from_pdf(str(PDF_PATH))
-        assert "TiendaNova" in texto
-        assert "Devoluciones" in texto or "devoluciones" in texto.lower()
-        assert "Reembolso" in texto or "reembolso" in texto.lower()
+        assert "PAMPA SUR" in texto
+        assert "vacaciones" in texto.lower()
+        assert "licencia" in texto.lower()
 
     def test_acepta_un_path(self):
         """Callers pass a Path, not only a string."""

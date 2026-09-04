@@ -1,7 +1,7 @@
-"""Fixtures that boot a real Streamlit server for end-to-end tests.
+"""Fixtures que levantan un servidor Streamlit real para los tests e2e.
 
-End-to-end tests drive an actual browser against an actual server process, so
-they are slow and are excluded from the default test run. Run them with
+Estos tests manejan un navegador de verdad contra un proceso de verdad, asi
+que son lentos y quedan fuera de la corrida por defecto. Se corren con
 `make test-e2e`.
 """
 
@@ -20,34 +20,34 @@ STARTUP_TIMEOUT_SECONDS = 60
 
 
 def _free_port() -> int:
-    """Reserve an ephemeral port so parallel runs never collide."""
+    """Reserva un puerto efimero para que dos corridas nunca choquen."""
     with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as sock:
         sock.bind(("127.0.0.1", 0))
         return int(sock.getsockname()[1])
 
 
 def _wait_until_serving(url: str, process: subprocess.Popen[bytes], timeout: float) -> None:
-    """Poll until the server answers, failing fast if the process dies."""
+    """Espera a que el servidor responda, y falla rapido si el proceso muere."""
     deadline = time.monotonic() + timeout
     while time.monotonic() < deadline:
         if process.poll() is not None:
             raise RuntimeError(
-                f"Streamlit exited with code {process.returncode} before serving {url}"
+                f"Streamlit termino con codigo {process.returncode} antes de servir {url}"
             )
         try:
             if requests.get(url, timeout=2).status_code == 200:
                 return
         except requests.RequestException:
             time.sleep(0.5)
-    raise TimeoutError(f"Streamlit did not serve {url} within {timeout}s")
+    raise TimeoutError(f"Streamlit no llego a servir {url} en {timeout}s")
 
 
 @pytest.fixture(scope="session")
 def streamlit_server() -> Iterator[str]:
-    """Start the app on a free port and yield its base URL.
+    """Levanta la app en un puerto libre y devuelve su URL base.
 
-    No API key is configured on purpose: the shell of the app must render
-    without one, which is exactly what the smoke test asserts.
+    No se configura API key a proposito: la app tiene que renderizar su
+    estructura sin una, que es justo lo que verifica el test de humo.
     """
     port = _free_port()
     url = f"http://127.0.0.1:{port}"
