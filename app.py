@@ -25,7 +25,7 @@ from pdf_utils import Document, combine_documents, truncate_for_context
 from router import route
 
 BASE_DIR = Path(__file__).parent
-DOCS_DIR = BASE_DIR / "corpus" / "pampa-sur"
+DOCS_DIR = BASE_DIR / "corpus" / "pampa-surena"
 LOGO_PATH = BASE_DIR / "assets" / "logo.png"
 FAVICON_PATH = BASE_DIR / "assets" / "favicon.png"
 GROQ_MODEL = resolve_model()
@@ -59,7 +59,7 @@ def _logo_base64() -> str:
 # El corpus de demostracion es el de una distribuidora mayorista ficticia, con
 # la mezcla de formatos que tiene una PyME de verdad: procedimientos y
 # politicas en PDF, precios y stock en planillas.
-EMPRESA_DEMO = "Distribuidora Pampa Sur"
+EMPRESA_DEMO = "Distribuidora Pampa Sureña"
 DEFAULT_DOCS = [
     ("Lista de precios", "lista_precios.csv"),
     ("Control de stock por depósito", "stock_depositos.csv"),

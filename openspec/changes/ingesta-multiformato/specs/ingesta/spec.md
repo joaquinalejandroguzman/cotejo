@@ -12,7 +12,7 @@ Cotejo hoy solo lee PDF. Esta especificación cubre la ingesta de datos tabulare
 | 2 | `ingesta-tabular` — Excel `.xlsx` y `.xls` |
 | 3 | `seleccion-de-filas` |
 | 4 | `ingesta-sheets` |
-| 5 | Corpus de Distribuidora Pampa Sur y README — valida los requisitos previos con datos reales, no agrega comportamiento nuevo |
+| 5 | Corpus de Distribuidora Pampa Sureña y README — valida los requisitos previos con datos reales, no agrega comportamiento nuevo |
 
 ## Capability: ingesta-tabular
 

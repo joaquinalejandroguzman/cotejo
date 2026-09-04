@@ -1,4 +1,4 @@
-"""Genera el corpus de demostracion de Distribuidora Pampa Sur.
+"""Genera el corpus de demostracion de Distribuidora Pampa Sureña.
 
 El corpus se versiona ya generado, pero este script queda en el repositorio
 para que cualquiera pueda auditar de donde sale cada dato y regenerarlo.
@@ -28,14 +28,14 @@ import io
 from pathlib import Path
 
 RAIZ = Path(__file__).resolve().parent.parent
-DESTINO = RAIZ / "corpus" / "pampa-sur"
+DESTINO = RAIZ / "corpus" / "pampa-surena"
 
 # Encoding con el que Excel exporta en configuracion regional argentina.
 # El corpus se guarda asi a proposito: es lo que llega de un cliente real.
 ENCODING = "cp1252"
 SEPARADOR = ";"
 
-EMPRESA = "DISTRIBUIDORA PAMPA SUR S.R.L."
+EMPRESA = "DISTRIBUIDORA PAMPA SUREÑA S.R.L."
 CUIT = "30-71455982-6"
 DOMICILIO = "Av. Alem 3450 - Bahía Blanca, Provincia de Buenos Aires"
 

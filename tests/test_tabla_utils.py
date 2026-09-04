@@ -61,7 +61,7 @@ class TestCabeceraDecorativa:
     def test_no_toma_el_titulo_como_si_fuera_una_fila(self):
         tabla = _leer("con_cabecera_decorativa.csv")
         primeras_celdas = [fila[0] for fila in tabla.filas]
-        assert "DISTRIBUIDORA PAMPA SUR" not in primeras_celdas
+        assert "DISTRIBUIDORA PAMPA SUREÑA" not in primeras_celdas
         assert len(tabla.filas) == 2
 
 

@@ -1,5 +1,5 @@
 {
-  "corpus": "corpus/pampa-sur",
+  "corpus": "corpus/pampa-surena",
   "descripcion": "Preguntas que un empleado de una distribuidora le hace a la documentación interna de su empresa. Están escritas como se preguntan de verdad: elípticas, con jerga del rubro, a veces mal formuladas, buscando un caso propio y no una definición. Cada una declara el documento que contiene la respuesta y los hechos que una respuesta correcta debe contener.",
   "preguntas": [
     {

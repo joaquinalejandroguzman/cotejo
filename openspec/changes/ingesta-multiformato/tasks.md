@@ -36,7 +36,7 @@ rama de PR1, PR3 la de PR2, y así — solo el tracker mergea a `main`.
 | 2 | Excel `.xlsx`/`.xls` | PR2 | `pytest tests/test_tabla_utils.py -k excel` | `make run` + subir `.xlsx` de 3 hojas (una oculta, una vacía) | Revertir `leer_excel` y el `type=[...]` del uploader — CSV sigue andando |
 | 3 | Selección de filas + límite 5MB | PR3 | `pytest tests/test_fila_selector.py tests/test_ingesta.py -k limite` | `make run` + planilla de 100+ filas, pregunta puntual | Revertir `fila_selector.py` y `app.py:362` — tablas vuelven a ir completas |
 | 4 | Google Sheets por URL | PR4 | `pytest tests/test_sheets_client.py` + `make test-e2e -k advertencia` | `make run` + pegar URL de Sheets publicada real | Revertir `sheets_client.py` y el input de URL en `app.py` |
-| 5 | Corpus Pampa Sur + README | PR5 | `make test test-e2e` | `make run` + corpus completo de Pampa Sur | Revertir `documentos-internos/` y traducciones — no toca código de producción |
+| 5 | Corpus Pampa Sureña + README | PR5 | `make test test-e2e` | `make run` + corpus completo de Pampa Sureña | Revertir `documentos-internos/` y traducciones — no toca código de producción |
 
 ## Fase 1 (PR 1): CSV punta a punta
 
@@ -83,9 +83,9 @@ rama de PR1, PR3 la de PR2, y así — solo el tracker mergea a `main`.
 - [ ] 4.5 Registrar `sheets_client.py` en `Makefile:12`, `pyproject.toml:41`, `pyproject.toml:81`.
 - [ ] 4.6 `make lint format-check typecheck test test-e2e` en verde.
 
-## Fase 5 (PR 5): Corpus Distribuidora Pampa Sur y README
+## Fase 5 (PR 5): Corpus Distribuidora Pampa Sureña y README
 
-- [ ] 5.1 Crear `documentos-internos/` con corpus ficticio de Distribuidora Pampa Sur (CSV, Excel, Sheets) que ejercite los PR 1–4 con datos reales.
+- [ ] 5.1 Crear `documentos-internos/` con corpus ficticio de Distribuidora Pampa Sureña (CSV, Excel, Sheets) que ejercite los PR 1–4 con datos reales.
 - [ ] 5.2 Actualizar `README.md` con los formatos nuevos y el corpus de ejemplo.
 - [ ] 5.3 Traducir a español: `Makefile`, `tests/e2e/test_smoke.py`, comentarios de `pyproject.toml`.
 - [ ] 5.4 `make lint format-check typecheck test test-e2e` en verde (Python 3.12/3.13/3.14).

@@ -143,7 +143,7 @@ pregunta ─→ fila_selector.reducir_tablas ─→ doc_selector.select_relevant
 | `requirements.txt` | Modificar | Las mismas tres, con la misma restricción de versión |
 | `tests/test_dependencias.py` | Crear o extender | Paridad `requirements.txt` ↔ `pyproject.toml`. **Verificado: no existe en esta rama.** El PR 1 no depende de que se mergee la rama `test/sincronia-de-dependencias`: si el archivo no está, lo crea; si está, lo extiende |
 | `tests/fixtures/` | Crear | CSV `;`+`cp1252` acentuado, `.xlsx` de 3 hojas (una oculta, una vacía), `.xls` legado chico |
-| `documentos-internos/` | Crear | Corpus de Distribuidora Pampa Sur (PR 5) |
+| `documentos-internos/` | Crear | Corpus de Distribuidora Pampa Sureña (PR 5) |
 | `openspec/config.yaml:8` | Modificar | Contrato de idioma a español (PR 1) |
 
 **Los tres puntos de registro son obligatorios y rompen compuertas distintas.**
@@ -244,7 +244,7 @@ entrega algo funcional y se revierte solo.
 | 2 | `tabla_utils.leer_excel` (D5: hojas visibles, `seek(0)`), `.xlsx` y `.xls`, hoja→`Document` | Un `.xlsx` de 3 hojas cita la hoja correcta |
 | 3 | `fila_selector.py` (D3, D4) + 3 puntos de registro, `renderizar`/`parsear`, límite de 5 MB en `ingesta.py` | Una planilla de 100+ filas responde un precio puntual; un artículo inexistente devuelve esquema sin filas |
 | 4 | `sheets_client.py` + 3 puntos de registro, advertencia previa al input, detección de HTML | Una Sheets publicada responde; una solo compartida da error claro |
-| 5 | Corpus de Distribuidora Pampa Sur, README, y la traducción a español de `Makefile`, `tests/e2e/test_smoke.py` y los comentarios de `pyproject.toml` | El corpus valida los PR 1-4 con datos reales |
+| 5 | Corpus de Distribuidora Pampa Sureña, README, y la traducción a español de `Makefile`, `tests/e2e/test_smoke.py` y los comentarios de `pyproject.toml` | El corpus valida los PR 1-4 con datos reales |
 
 La traducción cosmética se difiere al PR 5 a propósito: meterla en el PR 1
 infla el diff del eslabón que carga el riesgo real.
