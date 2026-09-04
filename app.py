@@ -19,6 +19,7 @@ import streamlit as st
 
 from doc_selector import select_relevant_docs
 from groq_client import GroqError, chat, resolve_model
+from historial import MensajeGuardado, mensajes_para_el_modelo
 from ingesta import FORMATOS_SOPORTADOS, IngestaError, extraer_documentos
 from pdf_utils import Document, combine_documents, truncate_for_context
 from router import route
@@ -28,12 +29,6 @@ DOCS_DIR = BASE_DIR / "corpus" / "pampa-sur"
 LOGO_PATH = BASE_DIR / "assets" / "logo.png"
 FAVICON_PATH = BASE_DIR / "assets" / "favicon.png"
 GROQ_MODEL = resolve_model()
-
-# Cuantos mensajes del historial se le mandan al modelo. El chat completo
-# viaja en cada request, asi que una conversacion larga se comia la cuota de
-# tokens por minuto del plan gratuito y terminaba en 429/413. Con 6 mensajes
-# (3 idas y vueltas) alcanza para sostener el contexto de la charla.
-MAX_HISTORY_MESSAGES = 6
 
 
 def _get_groq_api_key() -> str | None:
@@ -323,9 +318,30 @@ with col_reset:
 if "messages" not in st.session_state:
     st.session_state.messages = []
 
+
+def _mostrar_fuentes(fuentes: object) -> None:
+    """Muestra de que documentos salio la respuesta.
+
+    Es la promesa del producto hecha visible. El sistema ya sabe que
+    documentos consulto para responder; no mostrarlos obligaba a confiar a
+    ciegas, que es justo lo que un empleado no puede hacer antes de cotizarle
+    a un cliente.
+    """
+    if isinstance(fuentes, list) and fuentes:
+        st.caption("Contrastado con: " + " · ".join(str(f) for f in fuentes))
+
+
+def _dibujar(msg: MensajeGuardado) -> None:
+    if msg.get("error"):
+        st.error(msg["content"], icon=":material/error:")
+        return
+    st.markdown(msg["content"])
+    _mostrar_fuentes(msg.get("fuentes"))
+
+
 for msg in st.session_state.messages:
     with st.chat_message(msg["role"]):
-        st.markdown(msg["content"])
+        _dibujar(msg)
 
 if not docs:
     st.info(
@@ -346,26 +362,34 @@ if question:
     doc_names = [nombre for nombre, _ in docs]
     routed_answer = route(question, doc_names, company_name)
 
+    respuesta: MensajeGuardado = {"role": "assistant"}
     with st.chat_message("assistant"):
         if routed_answer is not None:
             # Saludo o pregunta meta sobre la documentacion: respuesta
             # deterministica, sin pasar por el LLM (evita alucinaciones).
-            answer = routed_answer
-            st.markdown(answer)
+            respuesta["content"] = routed_answer
         else:
             # Solo los documentos que hablan del tema preguntado, y solo los
-            # ultimos mensajes de la charla: mandar los 6 documentos enteros
-            # mas el historial completo agotaba la cuota de tokens por
-            # minuto del plan gratuito de Groq.
+            # ultimos mensajes de la charla: mandar los documentos enteros mas
+            # el historial completo agotaba la cuota de tokens por minuto del
+            # plan gratuito de Groq.
             relevantes = select_relevant_docs(question, docs)
             system_prompt = build_system_prompt(combine_documents(relevantes))
-            historial = st.session_state.messages[-MAX_HISTORY_MESSAGES:]
-            llm_messages = [{"role": "system", "content": system_prompt}, *historial]
-            with st.spinner("Pensando..."):
+            llm_messages = [
+                {"role": "system", "content": system_prompt},
+                *mensajes_para_el_modelo(st.session_state.messages),
+            ]
+            with st.spinner("Buscando en la documentación..."):
                 try:
-                    answer = chat(llm_messages, model=GROQ_MODEL, api_key=GROQ_API_KEY)
+                    respuesta["content"] = chat(
+                        llm_messages, model=GROQ_MODEL, api_key=GROQ_API_KEY
+                    )
+                    respuesta["fuentes"] = [nombre for nombre, _ in relevantes]
                 except GroqError as e:
-                    answer = f"⚠️ {e}"
-            st.markdown(answer)
+                    # Marcado como error para que no vuelva al modelo en el
+                    # turno siguiente como si fuera algo que el asistente dijo.
+                    respuesta["content"] = str(e)
+                    respuesta["error"] = True
+        _dibujar(respuesta)
 
-    st.session_state.messages.append({"role": "assistant", "content": answer})
+    st.session_state.messages.append(respuesta)
