@@ -1,6 +1,6 @@
 # Evaluación de recuperación
 
-Medición sobre el corpus de Distribuidora Pampa Sur, 54 preguntas escritas como las hace un empleado real.
+Medición sobre el corpus de Distribuidora Pampa Sureña, 54 preguntas escritas como las hace un empleado real.
 
 Reproducible con:
 

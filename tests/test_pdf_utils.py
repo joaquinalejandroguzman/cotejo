@@ -7,7 +7,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 from pdf_utils import combine_documents, extract_text_from_pdf, truncate_for_context
 
 PDF_PATH = (
-    Path(__file__).resolve().parent.parent / "corpus" / "pampa-sur" / "politica_licencias.pdf"
+    Path(__file__).resolve().parent.parent / "corpus" / "pampa-surena" / "politica_licencias.pdf"
 )
 
 
@@ -18,7 +18,7 @@ class TestExtractTextFromPdf:
 
     def test_contiene_secciones_esperadas(self):
         texto = extract_text_from_pdf(str(PDF_PATH))
-        assert "PAMPA SUR" in texto
+        assert "PAMPA SUREÑA" in texto
         assert "vacaciones" in texto.lower()
         assert "licencia" in texto.lower()
 

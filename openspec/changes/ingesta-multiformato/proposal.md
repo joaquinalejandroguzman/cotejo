@@ -14,7 +14,7 @@ Cotejo hoy solo lee PDF. Lo que los empleados preguntan todo el día —precios,
 - Advertencia visible antes de pegar la URL: publicar deja la hoja accesible con el link, sin login; no va con sueldos, costos ni datos personales.
 - Reducción de tablas grandes al presupuesto de contexto: esquema más filas relevantes.
 - Límite explícito de tamaño de archivo (hoy rige el default de 200 MB de Streamlit).
-- Corpus interno nuevo de una distribuidora mayorista ficticia: **Distribuidora Pampa Sur**.
+- Corpus interno nuevo de una distribuidora mayorista ficticia: **Distribuidora Pampa Sureña**.
 - `pandas`, `openpyxl` y `xlrd` declarados en `requirements.txt` **y** `pyproject.toml`, con el test de paridad que hoy no existe.
 - Corregir el contrato de idioma de `openspec/config.yaml` a español.
 
@@ -51,7 +51,7 @@ Un módulo de despacho por formato delega en `pdf_utils.py` sin tocarlo y en ext
 | `Makefile:12`, `pyproject.toml:41,81` | Modified | Módulos nuevos en `SRC`, `py-modules` e isort |
 | `pyproject.toml:18,98-100` | Modified | Dependencias y overrides de mypy |
 | `requirements.txt` | Modified | Dependencias nuevas |
-| `documentos-internos/` | New | Corpus de Distribuidora Pampa Sur |
+| `documentos-internos/` | New | Corpus de Distribuidora Pampa Sureña |
 | `openspec/config.yaml:8` | Modified | Contrato de idioma a español |
 
 ## Risks
@@ -94,7 +94,7 @@ Cada PR se revierte solo; revertir el último deja la app leyendo los formatos d
 | 2 | Excel `.xlsx` y `.xls`, hojas como documentos separados | ~280 |
 | 3 | Selección de filas y límite de tamaño | ~320 |
 | 4 | Google Sheets por URL y advertencia | ~250 |
-| 5 | Corpus de Distribuidora Pampa Sur y README | ~200 |
+| 5 | Corpus de Distribuidora Pampa Sureña y README | ~200 |
 
 `Decision needed before apply: Yes`
 `Chained PRs recommended: Yes`
@@ -106,7 +106,7 @@ Preguntas de la ronda de propuesta, ya respondidas por el usuario el 2026-09-02.
 
 | Tema | Decisión |
 | --- | --- |
-| Nombre de la PyME ficticia | **Distribuidora Pampa Sur** |
+| Nombre de la PyME ficticia | **Distribuidora Pampa Sureña** |
 | Techo de tamaño por archivo | **5 MB**, muy por debajo de los 200 MB de Streamlit |
 | Cabeceras decorativas | **Se detecta la fila de encabezado real.** Una planilla de PyME tiene título y fecha arriba de la tabla; exigir planilla limpia es diseñar para un caso que no existe |
 | Idioma | **Se unifica todo a español**, incluidos `openspec/config.yaml`, `Makefile`, `tests/e2e/test_smoke.py` y los comentarios de `pyproject.toml` |

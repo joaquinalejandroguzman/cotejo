@@ -16,7 +16,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 from ingesta import FORMATOS_SOPORTADOS, IngestaError, extraer_documentos
 
 FIXTURES = Path(__file__).resolve().parent / "fixtures"
-PDF = Path(__file__).resolve().parent.parent / "corpus" / "pampa-sur" / "politica_licencias.pdf"
+PDF = Path(__file__).resolve().parent.parent / "corpus" / "pampa-surena" / "politica_licencias.pdf"
 
 
 class TestDespachoDeCsv:
@@ -43,7 +43,7 @@ class TestDespachoDePdf:
         assert len(docs) == 1
         nombre, texto = docs[0]
         assert nombre == "politica_licencias.pdf"
-        assert "PAMPA SUR" in texto
+        assert "PAMPA SUREÑA" in texto
 
     def test_delega_en_pdf_utils_sin_modificarlo(self):
         # pdf_utils ya esta probado y en produccion: el despacho lo envuelve,

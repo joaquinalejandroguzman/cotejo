@@ -1,4 +1,4 @@
-"""Corre la evaluación del agente sobre el corpus de Distribuidora Pampa Sur.
+"""Corre la evaluación del agente sobre el corpus de Distribuidora Pampa Sureña.
 
 Mide dos cosas distintas, y la distinción importa:
 
@@ -94,7 +94,7 @@ def evaluar_respuesta(
 
     seleccion = recuperador.select_relevant_docs(pregunta["pregunta"], docs)
     sistema = (
-        "Sos el asistente interno de Distribuidora Pampa Sur. Respondés únicamente "
+        "Sos el asistente interno de Distribuidora Pampa Sureña. Respondés únicamente "
         "con la información de la documentación de abajo. Si no está, decís que no "
         "la encontrás. Nunca inventes datos.\n\n" + combine_documents(seleccion)
     )
