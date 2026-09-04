@@ -1,281 +1,248 @@
 <div align="center">
 
-# Agente Inteligente TiendaNova
+# Cotejo
 
-**Agente de IA para consultas sobre documentos propios**
+**Cada respuesta, contrastada con su fuente.**
 
-[![Python](https://img.shields.io/badge/Python_3.10+-3776AB?style=for-the-badge&logo=python&logoColor=white)](https://www.python.org/)
-[![Streamlit](https://img.shields.io/badge/Streamlit_UI-FF4B4B?style=for-the-badge&logo=streamlit&logoColor=white)](https://streamlit.io/)
-[![Groq](https://img.shields.io/badge/LLM_Groq_API-1A1A1A?style=for-the-badge)](https://groq.com/)
-[![Pytest](https://img.shields.io/badge/103_tests_passed-7B4FBF?style=for-the-badge&logo=pytest&logoColor=white)](#4-tests)
-[![License](https://img.shields.io/badge/License_MIT-FFB300?style=for-the-badge)](LICENSE)
+[![Python](https://img.shields.io/badge/Python_3.12+-3776AB?style=for-the-badge&logo=python&logoColor=white)](https://www.python.org/)
+[![Streamlit](https://img.shields.io/badge/Streamlit-FF4B4B?style=for-the-badge&logo=streamlit&logoColor=white)](https://streamlit.io/)
+[![Groq](https://img.shields.io/badge/Groq_API-1A1A1A?style=for-the-badge)](https://groq.com/)
+[![Tests](https://img.shields.io/badge/191_tests-7B4FBF?style=for-the-badge&logo=pytest&logoColor=white)](#calidad)
+[![License](https://img.shields.io/badge/MIT-FFB300?style=for-the-badge)](LICENSE)
 
-Agente de consultas sobre un corpus de PDF cargable desde la propia interfaz. Selecciona
-qué documentos entran en el contexto con un ranking léxico TF-IDF —sin base vectorial— y
-resuelve los casos borde con un router determinista antes de llegar al modelo.
-
-La demo corre sobre la documentación de una tienda ficticia, pero funciona con cualquier
-corpus.
-
-[![Demo en vivo](https://img.shields.io/badge/▶_DEMO_EN_VIVO-2EA043?style=for-the-badge)](https://agente-tiendanova.streamlit.app/)
+El equipo de una PyME le pregunta en criollo a la documentación interna de su empresa
+—precios, stock, licencias, procedimientos— y obtiene la respuesta que está en sus
+propios documentos. Sin inventar.
 
 </div>
 
 ---
 
-<p align="center">Challenge AlurAgente — Oracle Next Education (ONE) x Alura Latam — G10</p>
+## El problema
 
-## Cumplimiento del challenge
+En una PyME, el dueño es el cuello de botella. Lo interrumpen quince veces por día para
+preguntarle lo mismo: cuánto sale el artículo 4021, si queda stock en el depósito, cuántos
+días de licencia le quedan a alguien que entró en 2019, si una factura C de un
+monotributista genera crédito fiscal.
 
-| Requisito | Estado |
-| --- | :---: |
-| Repositorio público en GitHub con historial de commits | ✅ |
-| README con descripción, arquitectura, stack, instrucciones y ejemplos | ✅ |
-| Agente funcional sobre documentación real (6 documentos: privacidad, devoluciones, afiliados, envíos, pagos, garantía) | ✅ |
-| Manejo de casos borde sin depender del LLM (saludos, offtopic, jailbreak, datos sensibles) vía router | ✅ |
-| Suite de tests automatizados (103 tests, pytest) | ✅ |
-| Deploy público con capturas | ✅ |
+Todas esas respuestas ya están escritas. El problema no es que falte la información: es
+que está repartida entre un PDF de procedimientos, una planilla de precios en Excel y un
+reglamento que nadie leyó completo.
+
+## Qué hace Cotejo
+
+Toma esos documentos, y contesta con lo que dicen. Nada más que con lo que dicen.
+
+```
+❓ ¿cuánto sale el bulto de yerba Rosamonte y cuántas unidades trae?
+   → 10 unidades, $2.859,90
+
+❓ me llegó una factura C de un monotributista, ¿me genera crédito fiscal?
+   → No. Solo las facturas A de Responsables Inscriptos generan crédito
+     fiscal computable. El importe total constituye costo.
+
+❓ ¿cuánto sale el artículo 9999?
+   → No encuentro el artículo 9999 en la lista de precios.
+```
+
+Esa última es la que importa. Con la lista de precios entera delante y un código que no
+existe, **dice que no lo encuentra** en lugar de darte el precio del artículo de al lado.
+
+---
 
 ## Cómo funciona
 
 ```mermaid
 sequenceDiagram
-    participant U as Usuario
-    participant S as Streamlit (app.py)
+    participant U as Empleado
+    participant R as Router
+    participant S as Selector
     participant G as Groq
 
-    U->>S: 1. Pregunta
-    S->>S: 2. Extrae texto del PDF (pdf_utils.py, cacheado)
-    S->>S: 3. Router: ¿saludo, offtopic, meta-pregunta, dato sensible o jailbreak? (router.py, sin LLM)
-    Note over S: Si el router no resuelve la pregunta, sigue al modelo
-    S->>G: 4. system = documento + historial + pregunta
-    G->>G: 5. Genera la respuesta
-    G-->>S: 6. Respuesta
-    S-->>U: 7. Se muestra en el chat
+    U->>R: 1. Pregunta
+    R->>R: 2. ¿Saludo, fuera de tema, dato sensible, jailbreak?
+    Note over R: Si matchea, responde sin gastar un token
+    R->>S: 3. Pregunta real
+    S->>S: 4. Ranking léxico: qué documentos entran en el contexto
+    S->>G: 5. Solo los documentos del tema + últimos 6 mensajes
+    G-->>U: 6. Respuesta
 ```
 
-Decidí no incluir una base vectorial (RAG con embeddings): para 6
-documentos, un ranking léxico (TF-IDF calculado sobre los propios
-documentos cargados, en `doc_selector.py`) alcanza para elegir cuál
-responde la pregunta, y no arrastra la infraestructura de un pipeline de
-embeddings. Donde sí tuve que incluir algo extra fue el router: con un
-modelo chico, confiarle *todo* al prompt (saludos, preguntas fuera de tema,
-intentos de prompt injection) terminaba en respuestas inventadas. Mover
-esos casos a código Python determinístico resolvió el problema de raíz —
-más detalles en la sección de tests.
+**Dos decisiones definen el sistema, y las dos son deliberadas.**
 
-### Por qué no se mandan los 6 documentos enteros
+### El router resuelve sin LLM
 
-La primera versión inyectaba los 6 documentos completos en el system prompt:
-~31.700 caracteres, casi 8.000 tokens por pregunta. Andaba mientras el
-modelo tuvo un límite de tokens por minuto holgado, pero es frágil — una
-sola consulta consumía la cuota de todo el minuto en el plan gratuito.
+Los saludos, las preguntas fuera de tema, las consultas sobre datos sensibles y los
+intentos de prompt injection **no llegan al modelo**. Los resuelve código Python
+determinista.
 
-Hoy cada pregunta se puntúa contra los documentos y solo viajan los del tema
-consultado (~2.500-3.500 tokens), junto con los últimos 6 mensajes de la
-conversación en vez del historial completo. Con eso entra cómodo en los
-límites del plan gratuito y quedan varias preguntas por minuto disponibles.
+No es solo ahorro de tokens: un modelo chico al que se le confía todo al prompt termina
+inventando. Mover esos casos a reglas explícitas los vuelve auditables y testeables — hay
+más de 60 tests solo sobre el router.
 
-> **Nota sobre el modelo:** Groq da de baja modelos con fecha fija, y este
-> proyecto ya se cayó dos veces por eso:
-> `meta-llama/llama-4-scout-17b-16e-instruct` se apagó el **17/07/2026** y
-> `llama-3.3-70b-versatile` salió del plan gratuito el **16/08/2026**. En
-> ambos casos hubo que editar el código, commitear y redeployar para
-> revivir la app.
->
-> Por eso el modelo ya no está escrito en el código: se resuelve con la
-> variable de entorno `GROQ_MODEL`, y `openai/gpt-oss-120b` queda solo como
-> valor por defecto. Cuando Groq dé de baja el próximo, alcanza con mirar
-> [los modelos vigentes](https://console.groq.com/docs/models), cargar uno
-> nuevo en esa variable y reiniciar. Sin tocar una línea.
+### Recuperación léxica, sin base vectorial
 
-## Stack
+Para un corpus de unos pocos documentos, un ranking léxico alcanza para elegir cuál
+responde la pregunta, y evita arrastrar toda la infraestructura de un pipeline de
+embeddings.
 
-| Componente              | Tecnología                                          |
-| ------------------------ | ---------------------------------------------------- |
-| Interfaz                 | Streamlit                                            |
-| Modelo de lenguaje        | Groq API (`llama-3.3-70b-versatile`)                 |
-| Extracción de PDF         | pypdf                                                |
-| Comunicación con Groq     | API REST (`/openai/v1/chat/completions`) vía `requests` |
-| Infraestructura           | Streamlit Community Cloud                            |
+Esa decisión está **medida**, no supuesta. Ver abajo.
 
 ---
 
-## 1. Correrlo en local
+## Los resultados medidos
 
-Generá una API key en Groq ([console.groq.com](https://console.groq.com)).
+Esta es la parte que distingue al proyecto: no dice "anda bien", dice cuánto.
+
+**54 preguntas** escritas como las hace un empleado real —elípticas, con jerga del rubro—
+sobre un corpus de una distribuidora mayorista construido contra fuentes primarias: la
+especificación del SEPA para las columnas, un catálogo mayorista real para los precios, y
+el texto de la Ley de Contrato de Trabajo y del CCT 130/75 para las licencias.
 
 ```bash
-# 1. Configurar la API key
+python evaluacion/ejecutar.py
+```
+
+| Recuperador | Documento correcto recuperado |
+| --- | --- |
+| TF-IDF | **47/54 — 87%** |
+| BM25 | **47/54 — 87%** |
+
+**Empataron.** Y ese resultado negativo valió más que una mejora.
+
+La literatura que respalda hacer recuperación léxica sin base vectorial habla siempre de
+BM25, no de TF-IDF. Cambiar al estándar parecía obvio. Medirlo mostró que en este corpus
+no cambia nada — y obligó a buscar la causa real:
+
+```
+Presupuesto de contexto: 14.000 caracteres
+
+  stock_depositos.csv    14.471   (103%)  <-- no entra con ningún otro
+  lista_precios.csv      13.903    (99%)  <-- no entra con ningún otro
+  politica_licencias.pdf  6.226    (44%)
+```
+
+**Una sola planilla consume todo el presupuesto de contexto.** El cuello de botella no es
+el algoritmo de ranking: es la granularidad. El sistema elige bien, pero entre unidades
+del tamaño equivocado. Una lista de 77 artículos entra entera o no entra, cuando la
+pregunta necesita **una fila**.
+
+El análisis completo, con los siete fallos y qué se trajo en lugar de lo esperado, está en
+**[`evaluacion/RESULTADOS.md`](evaluacion/RESULTADOS.md)**.
+
+---
+
+## Lo que lee
+
+| Formato | Detalle |
+| --- | --- |
+| **PDF** | Procedimientos, políticas, reglamentos |
+| **CSV** | Listas de precios, stock, cualquier planilla exportada |
+
+La lectura de CSV contempla el caso argentino real: **separador `;` y encoding `cp1252`**,
+que es lo que exporta Excel en configuración regional es-AR. También detecta la fila de
+encabezado cuando la planilla trae el nombre de la empresa y una fecha arriba de la tabla,
+y **preserva los decimales con coma** — `4350,50` no se convierte en `4350.5`.
+
+---
+
+## Correrlo
+
+```bash
+# 1. API key gratuita en https://console.groq.com/keys
 export GROQ_API_KEY=tu_api_key
 
-# 2. Clonar y entrar a la carpeta
-cd agente_tiendanova
+# 2. Instalar
+make install
 
-# 3. Instalar dependencias
-pip install -r requirements.txt
-
-# 4. Levantar la app
-streamlit run app.py
+# 3. Levantar
+make run
 ```
 
-Se abre solo en `http://localhost:8501`.
-
----
-
-## 2. Ejemplos de respuestas
-
-Las respuestas las genera el modelo en tiempo real, no son texto guionado:
-la redacción exacta puede variar entre ejecuciones, aunque el contenido se
-mantiene consistente. Estas son respuestas reales del agente:
-
-**¿Cómo solicito una devolución?**
-> Para solicitar una devolución, puedes seguir estos pasos: 1) Ingresa a
-> "Mis Pedidos" en tu cuenta de cliente. 2) Selecciona el pedido que deseas
-> devolver. 3) Elige "Solicitar devolución". 4) Indica el motivo (producto
-> defectuoso, talla incorrecta, no cumplió expectativas, error en el
-> pedido, etc.). 5) Imprime la etiqueta de envío de devolución, gratuita si
-> el motivo es un error de TiendaNova o un producto defectuoso, y a cargo
-> del cliente en los demás casos.
-
-**¿Qué métodos de pago aceptan?**
-> TiendaNova acepta tarjetas de crédito y débito (Visa, Mastercard,
-> American Express), transferencia bancaria y billeteras digitales
-> (Mercado Pago, PayPal). La disponibilidad puede variar por país,
-> categoría y monto.
-
-**¿En qué países opera TiendaNova?**
-> TiendaNova opera en los siguientes países: Argentina, México, Colombia,
-> Chile y Perú.
-
----
-
-## 3. Deploy en Streamlit Community Cloud
-
-**1. Generar API key de Groq** en [console.groq.com/keys](https://console.groq.com/keys).
-
-**2. Crear la app**
-En [share.streamlit.io](https://share.streamlit.io/), vincular con GitHub → repo `agente-tiendanova` → rama `main` → `app.py`.
-
-**3. Configurar el secret** en Advanced settings → Secrets:
-```toml
-GROQ_API_KEY = "api_key"
-```
-
-**4. Deploy**
-
-**URL pública**: [agente-tiendanova.streamlit.app](https://agente-tiendanova.streamlit.app/).
-
-**Capturas**
-
-| App desplegada | Respondiendo una pregunta |
-| --- | --- |
-| ![Landing de la app](docs/screenshots/agente-sin-pregunta.png) | ![Respuesta sobre devoluciones](docs/screenshots/agente-con-pregunta.png) |
-
-Sin documentación cargada el agente no responde. Y si se destilda la
-documentación de TiendaNova y se sube otro PDF, responde sobre ese corpus —
-acá, el reglamento interno de una empresa de logística:
-
-| Sin documentación cargada | Con otra documentación |
-| --- | --- |
-| ![Sin documentos, no responde](docs/screenshots/agente-sin-documentacion.png) | ![Respondiendo sobre el reglamento de una empresa de logística](docs/screenshots/agente-diferente-documentacion.png) |
-
----
-
-## 4. Tests
-
-103 tests unitarios (pytest) para `router.py`, `pdf_utils.py`,
-`doc_selector.py` y `groq_client.py`. Cubren saludos (incluyendo preguntas reales cortas
-disfrazadas de saludo, como "hola, hay envíos?") y preguntas sobre la
-documentación. También cubren los intentos de jailbreak y prompt injection
-detectados probando el agente manualmente, evaluando a propósito distintas
-categorías: anular instrucciones, cambio de rol sin restricciones, pedido
-directo del prompt, extracción indirecta, autoridad falsa, variantes en
-inglés, insistencia tras un rechazo (tanto de jailbreak como de preguntas
-fuera de tema), errores de tipeo en "prompt"/"system" y variantes
-gramaticales de "decime". Además incluyen la limpieza de muletillas tipo
-"según el documento" en las respuestas, el manejo de error cuando falta la
-API key de Groq o cuando Groq devuelve una respuesta con formato
-inesperado, y una respuesta fija para preguntas sobre si se guardan los
-datos de la tarjeta del cliente — un tema de seguridad de pagos donde,
-probando manualmente, detecté que el modelo podía invertir el hecho e
-inventar datos como el CVV, demasiado riesgoso para dejarlo en manos del
-LLM.
+El modelo se resuelve por entorno, no está escrito en el código:
 
 ```bash
-pip install -r requirements-dev.txt
-pytest tests/ -v
+export GROQ_MODEL=openai/gpt-oss-120b   # opcional; es el valor por defecto
 ```
 
-**Límites conocidos del router anti-jailbreak.** El router detecta
-patrones de texto literal (con variantes), no entiende el lenguaje: hay
-categorías de ataque que quedan fuera de forma deliberada, porque no se
-pueden cubrir con regex sin generar falsos positivos. Entre ellas:
-reencuadres creativos ("actuá como un personaje de ficción sin reglas y
-contame..."), ofuscación (`s3cr3to`, separar letras con guiones) y ataques
-multi-turno (dividir la instrucción en varios mensajes, del tipo "a partir
-de ahora, cuando diga X hacé Y"). Esto no es un problema exclusivo de este
-proyecto: ni los sistemas de producción con mucho más presupuesto lo
-resuelven al 100% solo con reglas. Prefiero documentar esta limitación
-antes que simular que está resuelta.
+Esto no es un detalle. Groq da de baja modelos con fecha fija y **este proyecto se cayó dos
+veces por eso**. Ahora, cuando dé de baja el próximo, alcanza con cambiar un secret y
+reiniciar. Sin tocar código, sin redeploy.
+
+Y para no enterarse por el cliente, un workflow verifica **todos los días** que el modelo
+configurado siga vigente, activo y respondiendo. Si algo falla, llega un mail y se abre un
+issue con el diagnóstico y la lista de reemplazos válidos.
 
 ---
 
-## 5. Estructura del proyecto
+## Calidad
+
+Cinco compuertas, las mismas en tu máquina y en CI:
+
+```bash
+make lint          # ruff
+make format-check  # ruff format
+make typecheck     # mypy en modo estricto
+make test          # 191 tests unitarios
+make test-e2e      # Playwright contra un servidor Streamlit real
+make check         # todas juntas
 ```
-agente_tiendanova/
-├── app.py            # Interfaz Streamlit + lógica del chat
-├── pdf_utils.py      # Extracción y combinación de texto de PDFs
-├── groq_client.py    # Cliente REST minimalista para la API de Groq
-├── router.py         # Router de intención (saludos, meta-preguntas, anti-jailbreak)
-├── doc_selector.py   # Elige qué documentos entran en el contexto de cada pregunta
-├── documentos/       # Documentación base del agente
-│   ├── privacidad_terminos.pdf
-│   ├── politica_devoluciones.pdf
-│   ├── programa_afiliados.pdf
-│   ├── guia_envios.pdf
-│   ├── faq_pagos.pdf
-│   └── manual_garantia.pdf
-├── tests/
-│   ├── test_router.py
-│   ├── test_pdf_utils.py
-│   ├── test_doc_selector.py
-│   └── test_groq_client.py
-├── docs/
-│   └── screenshots/  # Capturas del deploy
-├── .streamlit/
-│   ├── config.toml   # Tema oscuro fijo + menú de desarrollador oculto
-│   └── secrets.toml.example
-├── requirements.txt
-├── requirements-dev.txt
-├── LICENSE
-├── .gitignore
-└── README.md
-```
+
+CI corre sobre **Python 3.12, 3.13 y 3.14**, más un job end-to-end que levanta Chromium
+contra la app.
+
+El desarrollo sigue **TDD estricto**: cada implementación viene precedida por su test en
+rojo. Y hay un test que compara `requirements.txt` contra `pyproject.toml` y falla si
+divergen, porque Streamlit Cloud instala del primero y una diferencia solo se manifestaría
+en producción.
 
 ---
 
-## 6. Algunas notas sueltas
-- La documentación de la demo está dividida en 6 documentos por tema en vez
-  de un único PDF, lo que permite citar la fuente correcta y facilita el
-  mantenimiento.
-- La `GROQ_API_KEY` nunca queda en el repositorio: en local se define
-  como variable de entorno, y en Streamlit Community Cloud se configura
-  como secret desde el panel de la app.
+## Decisiones de diseño
+
+Las que vale la pena contar, con su porqué.
+
+**Sin filas coincidentes, no se manda ninguna fila.** Si se pregunta por un artículo que no
+está en la planilla, el contexto lleva el esquema de la tabla y cero datos. Copiar la regla
+de "si nada matchea, mandá los primeros" pondría frente al modelo filas con la forma exacta
+de una respuesta válida —SKU, producto, precio— y lo empujaría a contestar con el precio de
+otro artículo. La garantía es la **ausencia** de ese camino en el código, no una condición
+que alguien pueda invertir.
+
+**Los errores le hablan a dos audiencias distintas.** El empleado ve *"el asistente no está
+disponible, el problema quedó registrado"*. El log recibe *"el modelo X ya no está
+disponible en Groq (404), cargá uno nuevo en la variable GROQ_MODEL"*. Mezclarlos dejaba al
+usuario leyendo nombres de variables de entorno y a quien mantiene el sistema sin enterarse
+de nada.
+
+**pandas queda detrás de una frontera tipada.** No trae `py.typed`, así que todos sus
+símbolos son `Any` y con `warn_return_any` cualquier `return` suyo es un error. Todo cruza
+por una función de cinco líneas que coacciona a `str` — y de paso eso preserva los
+decimales con coma.
+
+**El corpus de demostración no está todo actualizado a la misma fecha.** El reglamento
+interno está fechado en 2022 y dice "AFIP" en vez de "ARCA". No es un descuido: es como son
+los documentos de una PyME real, y genera el mejor caso de prueba del corpus — una pregunta
+con una respuesta correcta en un documento y una plausible pero desactualizada en otro.
 
 ---
 
-## 7. Licencia
+## Origen
 
-MIT — ver [LICENSE](https://github.com/joaquinalejandroguzman/agente-tiendanova/blob/main/LICENSE).
+Este proyecto nació como el **Challenge AlurAgente** de Oracle Next Education y Alura
+Latam. Esa entrega está congelada y sigue navegable en el tag
+**[`v1.0-challenge-alura`](../../releases/tag/v1.0-challenge-alura)**.
 
-Acorde a los requerimientos, autorizo el uso de este proyecto con fines educativos.
+Lo que vino después cambió de objetivo: dejó de ser un agente de atención al cliente sobre
+una tienda de demostración y pasó a ser una herramienta de consulta sobre la documentación
+interna de una PyME.
+
+---
 
 <div align="center">
 
-## Autor
+**Joaquín A. Guzmán** · Data & Business Analyst para PyMEs
 
-**Joaquín A. Guzmán**  
-[LinkedIn](https://www.linkedin.com/in/joaquinalejandroguzman/)
+[![LinkedIn](https://img.shields.io/badge/LinkedIn-0A66C2?style=for-the-badge&logo=linkedin&logoColor=white)](https://www.linkedin.com/in/joaquinalejandroguzman/)
 
 </div>

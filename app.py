@@ -1,13 +1,14 @@
 """
-Agente Inteligente TiendaNova - Challenge AlurAgente (Oracle ONE / Alura Latam)
+Cotejo - Cada respuesta, contrastada con su fuente.
 
-Streamlit app que lee un documento (PDF) de la tienda y responde preguntas
-de los clientes usando la API de Groq.
+Herramienta de consulta sobre la documentacion interna de una PyME. El equipo
+le pregunta en lenguaje natural a sus propios documentos y planillas, y el
+agente responde unicamente con lo que esos documentos dicen.
 
 Ejecutar localmente:
     export GROQ_API_KEY=tu_api_key     # https://console.groq.com/keys
-    pip install -r requirements.txt
-    streamlit run app.py
+    make install
+    make run
 """
 
 import base64
@@ -23,7 +24,7 @@ from pdf_utils import Document, combine_documents, truncate_for_context
 from router import route
 
 BASE_DIR = Path(__file__).parent
-DOCS_DIR = BASE_DIR / "documentos"
+DOCS_DIR = BASE_DIR / "corpus" / "pampa-sur"
 LOGO_PATH = BASE_DIR / "assets" / "logo.png"
 FAVICON_PATH = BASE_DIR / "assets" / "favicon.png"
 GROQ_MODEL = resolve_model()
@@ -59,17 +60,21 @@ def _logo_base64() -> str:
 # Documentacion base: 6 documentos separados (en vez de un unico PDF), cada
 # uno enfocado en un tema puntual. Asi el agente puede citar la fuente
 # correcta y es mas facil de mantener que un solo documento gigante.
+#
+# El corpus de demostracion es el de una distribuidora mayorista ficticia, con
+# la mezcla de formatos que tiene una PyME de verdad: procedimientos y
+# politicas en PDF, precios y stock en planillas.
+EMPRESA_DEMO = "Distribuidora Pampa Sur"
 DEFAULT_DOCS = [
-    ("Política de Privacidad y Términos y Condiciones", "privacidad_terminos.pdf"),
-    ("Política de Reembolsos y Devoluciones", "politica_devoluciones.pdf"),
-    ("Programa de Afiliados", "programa_afiliados.pdf"),
-    ("Guía de Tiempos y Costos de Envío", "guia_envios.pdf"),
-    ("FAQ de Métodos de Pago", "faq_pagos.pdf"),
-    ("Manual de Garantía de Productos", "manual_garantia.pdf"),
+    ("Lista de precios", "lista_precios.csv"),
+    ("Control de stock por depósito", "stock_depositos.csv"),
+    ("Política de licencias y vacaciones", "politica_licencias.pdf"),
+    ("Procedimiento de carga de facturas de compra", "procedimiento_facturas.pdf"),
+    ("Reglamento interno de trabajo", "reglamento_interno.pdf"),
 ]
 
 st.set_page_config(
-    page_title="Agente TiendaNova",
+    page_title="Cotejo",
     page_icon=str(FAVICON_PATH) if FAVICON_PATH.exists() else "🛍️",
     layout="centered",
 )
@@ -78,9 +83,10 @@ st.set_page_config(
 # Sidebar: cara visible del producto (no infraestructura)
 # ---------------------------------------------------------------------------
 EJEMPLOS = [
-    "¿Cómo solicito una devolución?",
-    "¿Qué métodos de pago aceptan?",
-    "¿En qué países opera TiendaNova?",
+    "¿Cuánto sale el bulto de yerba Rosamonte?",
+    "Entré en marzo de 2019, ¿cuántos días de vacaciones me tocan?",
+    "Me llegó una factura C de un monotributista, ¿genera crédito fiscal?",
+    "¿Queda stock de yerba Playadito?",
 ]
 
 with st.sidebar:
@@ -88,13 +94,13 @@ with st.sidebar:
         st.markdown(
             "<div style='display:flex; align-items:center; justify-content:center; gap:10px;'>"
             f"<img src='data:image/png;base64,{_logo_base64()}' width='32'/>"
-            "<span style='font-size:1.3rem; font-weight:700;'>TiendaNova</span>"
+            "<span style='font-size:1.3rem; font-weight:700;'>Cotejo</span>"
             "</div>",
             unsafe_allow_html=True,
         )
     else:
         st.markdown(
-            "<div style='text-align:center; font-size:1.3rem; font-weight:700;'>🛍️ TiendaNova</div>",
+            "<div style='text-align:center; font-size:1.3rem; font-weight:700;'>📑 Cotejo</div>",
             unsafe_allow_html=True,
         )
     st.markdown(
@@ -109,18 +115,18 @@ with st.sidebar:
                 st.session_state["pending_question"] = ejemplo
 
     incluir_base = st.checkbox(
-        "Usar documentación de TiendaNova (6 documentos)",
+        f"Usar la documentación de demo ({EMPRESA_DEMO})",
         value=True,
-        help="Incluye privacidad y términos, devoluciones, programa de afiliados, "
-        "envíos, métodos de pago y garantía de productos. Desmarcala si vas a "
-        "subir tu propia documentación en su lugar.",
+        help="Cinco documentos de una distribuidora ficticia: lista de precios, "
+        "stock por depósito, licencias, carga de facturas y reglamento interno. "
+        "Desmarcala si vas a subir tu propia documentación en su lugar.",
     )
     extras = st.file_uploader(
         "Sumar o reemplazar con tus documentos",
         type=list(FORMATOS_SOPORTADOS),
         accept_multiple_files=True,
         help="Acepta PDF y planillas en CSV. Se combinan con la documentación "
-        "de TiendaNova, o la reemplazan si desmarcás la opción de arriba.",
+        "de demo, o la reemplazan si desmarcás la opción de arriba.",
         label_visibility="collapsed",
     )
 
@@ -144,7 +150,7 @@ def cargar(nombre_archivo: str, origen: bytes) -> list[Document]:
 def detect_company_name(doc_text: str, api_key: str | None, model: str = GROQ_MODEL) -> str | None:
     """Le pregunta al modelo el nombre de la empresa/marca del documento
     cargado, para que el agente se presente con el nombre correcto en vez
-    de asumir siempre "TiendaNova". Si no se puede determinar con
+    de asumir siempre el de la demo. Si no se puede determinar con
     confianza, devuelve None y el agente queda generico (sin marca)."""
     if not doc_text.strip():
         return None
@@ -189,7 +195,7 @@ if not docs:
     # Ni base ni extras: no hay nada que el agente pueda responder.
     # No usamos ningun documento de respaldo silencioso — avisamos y frenamos.
     st.sidebar.warning(
-        "Sin documentos cargados. Activá la documentación de TiendaNova o subí un archivo."
+        "Sin documentos cargados. Activá la documentación de demo o subí un archivo."
     )
 else:
     nombres = [nombre for nombre, _ in docs]
@@ -209,13 +215,13 @@ st.sidebar.markdown(
 # LLM en cada pregunta lo arma select_relevant_docs mas abajo.
 doc_text_completo = truncate_for_context(combine_documents(docs), max_chars=45000) if docs else ""
 
-# Nombre de la empresa: si esta la documentacion base de TiendaNova activada,
-# es TiendaNova (no hace falta preguntarle al modelo). Si el usuario cargo
+# Nombre de la empresa: si esta la documentacion de demo activada, ya se sabe
+# cual es y no hace falta preguntarle al modelo. Si el usuario cargo
 # solo documentos propios, se lo pedimos al modelo; si no se puede
 # determinar con confianza, el agente queda generico (sin marca fija).
 company_name: str | None
 if incluir_base:
-    company_name = "TiendaNova"
+    company_name = EMPRESA_DEMO
 elif docs:
     company_name = detect_company_name(doc_text_completo, GROQ_API_KEY)
 else:
@@ -223,9 +229,7 @@ else:
 
 rol_agente = f"de {company_name}" if company_name else "virtual"
 tema_relacion = f"con {company_name}" if company_name else "con el contenido del documento"
-contacto = (
-    "soporte@tiendanova.com" if company_name == "TiendaNova" else "el soporte correspondiente"
-)
+contacto = "Administración" if company_name == EMPRESA_DEMO else "el área que corresponda"
 
 
 def build_system_prompt(doc_text: str) -> str:
@@ -298,18 +302,17 @@ with col_titulo:
             "<div style='display:flex; align-items:center; justify-content:center; gap:14px;'>"
             f"<img src='data:image/png;base64,{_logo_base64()}' width='56'/>"
             "<h1 style='margin:0; white-space:nowrap; font-size:2.1rem;'>"
-            "Agente de Soporte Virtual</h1></div>",
+            "Cotejo</h1></div>",
             unsafe_allow_html=True,
         )
     else:
         st.markdown(
-            "<h1 style='text-align:center; margin:0; font-size:2.1rem;'>"
-            "🛍️ Agente de Soporte Virtual</h1>",
+            "<h1 style='text-align:center; margin:0; font-size:2.1rem;'>📑 Cotejo</h1>",
             unsafe_allow_html=True,
         )
     st.markdown(
         "<div style='text-align:center; color:#8a8a8a; font-size:0.9rem;'>"
-        "Devoluciones · Envíos · Pagos · Garantía · Privacidad · Afiliados</div>",
+        "Cada respuesta, contrastada con su fuente</div>",
         unsafe_allow_html=True,
     )
 with col_reset:
@@ -326,12 +329,11 @@ for msg in st.session_state.messages:
 
 if not docs:
     st.info(
-        "Activá la documentación de TiendaNova o subí un archivo "
-        "en la barra lateral para poder chatear."
+        "Activá la documentación de demo o subí un archivo en la barra lateral para poder chatear."
     )
     question = None
 else:
-    question = st.chat_input("Escribe tu pregunta sobre políticas, envíos, devoluciones...")
+    question = st.chat_input("Preguntá sobre precios, stock, licencias, facturas...")
 
 if not question and "pending_question" in st.session_state and docs:
     question = st.session_state.pop("pending_question")
